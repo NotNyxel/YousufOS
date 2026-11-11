@@ -6,6 +6,47 @@ Every YousufOS release. Install a release on the TV laptop with
 
 The source code in this repository starts with 1.7.0. Earlier versions are available as installers on their releases.
 
+## 1.8.0 · 11 November 2026
+
+The Ramadan-ready update.
+
+### Qur'an
+- A new **Qur'an** page in the sidebar: the 114 surahs, the 30 juz, bookmarks and downloads. The Uthmani text is built in, so reading works without internet.
+- Read a surah verse by verse with a translation under each verse, or switch to **Mushaf** view and turn the pages of the Madinah mushaf with ← →.
+- Recitation verse by verse from 16 reciters (Mishary Alafasy, Abdul Rahman Al-Sudais, Saud Al-Shuraim, Maher Al-Muaiqly, Al-Husary, Abdul Basit and more), plus English and Urdu translation recitations. The verse being recited is highlighted and the page follows it. The basmala is recited before each surah.
+- OK on a verse: play from here, play only this verse, repeat it 3 times, bookmark it, or read its tafsir.
+- Recitation keeps playing on other pages (a small chip at the top), and pauses for the Adhan, Live TV, films and apps.
+- Downloads: whole reciters or single surahs for listening offline, and any of 118 translations in 48 languages and 6 tafsir for reading offline.
+- YousufOS remembers where you stopped reading.
+
+### Ramadan mode
+- Turns on by itself when Ramadan begins, or switch it on any time to try it (Settings → Prayer & Adhan).
+- Home: the day of Ramadan and a countdown to iftar or to the end of suhoor.
+- Suhoor alarm before Fajr (15–90 minutes before), on the TV and on your phones.
+- The Maghrib Adhan screen shows the dua for breaking the fast; an "Iftar time" message on your phones.
+- Laylat al-Qadr reminders with its dua on the odd nights of the last ten.
+- Prayer page: Taraweeh tracker (30 nights) and Qur'an khatm tracker (a juz a day, with "Read juz N").
+
+### Kids profile
+- Only the apps you allow, Live TV with children's and Qur'an channels only, games and the Qur'an, and optionally a child's Jellyfin account.
+- A daily time limit and a bedtime; when time is up everything stops and a friendly screen appears.
+- A 4-digit parent PIN to leave the profile or add 30 minutes. The phone panel can switch it on and off and add time too.
+
+### Sleep timer
+- In the sidebar and on the phone: in 15–120 minutes or at the end of what's playing.
+- Then stop and turn the screen off, put the laptop to sleep, or just stop playing. A minute before, it offers 15 more minutes.
+
+### Cameras and the doorbell
+- A **Cameras** page with live pictures from cameras with a stream address (RTSP, HLS, MJPEG, picture links) or from Home Assistant; OK watches one full screen.
+- When the doorbell rings, its camera pops up in a corner with a chime and a message on your phones. Rings come from a Home Assistant entity or from `/api/doorbell` on the TV.
+- The phone panel shows camera pictures, puts a camera on the TV and can test the doorbell.
+
+### Server monitor (phone panel)
+- A new **Server** tab: each processor core, memory, storage, network speed, temperatures, the busiest programs, Docker containers (start / stop / restart), services and Tailscale.
+
+### Fixes
+- Qur'an text in the Amiri font: some letters (like ىٰ) were drawn below the line on the TV. The Ayah of the day card had this too.
+
 ## 1.7.1 · 11 November 2026
 
 ### Fixes

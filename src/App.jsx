@@ -13,6 +13,18 @@ import Settings from "./pages/Settings";
 import LiveTV from "./pages/LiveTV";
 import Games from "./pages/Games";
 import Search from "./pages/Search";
+import Quran from "./pages/Quran";
+import NowReciting from "./quran/NowReciting";
+import { pause as pauseRecitation, useRecitation } from "./quran/audio";
+import { loadQuran } from "./quran/data";
+import { ramadanInfo, IFTAR_DUA, QADR_DUA, SUHOOR_HADITH } from "./lib/ramadan";
+import { KIDS_PAGES, kidsAllowsApp, kidsLock, today as todayKey } from "./lib/kids";
+import KidsLock from "./components/KidsLock";
+import PinPad from "./components/PinPad";
+import { SleepMenu, SleepScreen, SleepWarning } from "./components/SleepTimer";
+import Cameras from "./pages/Cameras";
+import DoorbellBanner from "./components/DoorbellBanner";
+import { popupCamera, snapshot as cameraSnapshot, useDoorbell, watchCamera } from "./lib/cameras";
 import JellyfinApp from "./jellyfin/JellyfinApp";
 import { normalizeServer } from "./jellyfin/api";
 import CastPhoto from "./components/CastPhoto";
@@ -29,7 +41,7 @@ import { ADHAN_PRAYERS, prayerSchedule } from "./lib/prayer";
 import { pickWallpapers } from "./lib/wallpapers";
 import { loadWorldCatalog, worldPhotos } from "./lib/worldWallpapers";
 import { focusDefault, focusEl, pressKey, restoreMain, useGamepad, useSpatialNav } from "./lib/nav";
-import { closeApp, fileSrc, isTauri, launchApp, listImages, listen, playExternal } from "./lib/platform";
+import { closeApp, fileSrc, invoke, isTauri, launchApp, listImages, listen, playExternal, playerCommand, system } from "./lib/platform";
 import { appOpensInside } from "./lib/apps";
 import VolumeHud from "./components/VolumeHud";
 import { detectLocation } from "./lib/location";
@@ -41,7 +53,23 @@ import { ISTIGHFAR, TAKBIR, eidToday, isQuietTime, playChime, takbirPeriod } fro
 const DEFAULT_IMAGE_DIR = "~/Pictures/YousufOS";
 
 export default function App() {
-  const { settings, update, replace, accent, apps, loaded, i18n } = useSettings();
+  const { settings, update, replace, accent, apps: allApps, loaded, i18n } = useSettings();
+  // ---- Kids profile: only the apps, pages and time a parent allowed --------
+  const kids = settings.kids || {};
+  const kidsOn = !!kids.active;
+  const kidsAccount = kidsOn && kids.jellyfin ? (settings.jellyfin?.accounts || []).find((a) => a.userId === kids.jellyfin) || null : null;
+  const kidsMay = useCallback((a) => kidsAllowsApp(kids, a) || (a.id === "jellyfin" && !!kidsAccount), [kids, kidsAccount]);
+  const apps = useMemo(() => (kidsOn ? allApps.filter(kidsMay) : allApps), [kidsOn, allApps, kidsMay]);
+  const kidsPages = useMemo(
+    () => KIDS_PAGES.filter((p) => (p === "livetv" ? kids.tv !== false : p === "games" ? kids.games !== false : p === "quran" ? kids.quran !== false : true)),
+    [kids.tv, kids.games, kids.quran],
+  );
+  const [kidsPin, setKidsPin] = useState(false);
+  // Jellyfin in the Kids profile signs in as the child's account only.
+  const jfSettings = useMemo(
+    () => (kidsOn ? { ...settings, jellyfin: { ...settings.jellyfin, auth: kidsAccount, accounts: kidsAccount ? [kidsAccount] : [], askProfile: false } } : settings),
+    [kidsOn, kidsAccount, settings],
+  );
   const { t } = i18n;
   // Checks run every 5 s; pages only re-render when the minute changes.
   const now = useNow(5000);
@@ -64,6 +92,9 @@ export default function App() {
   const [castPhoto, setCastPhoto] = useState(null);
   const [morning, setMorning] = useState(false);
   const [lastApp, setLastApp] = useState(null);
+  // Opening the Qur'an reader from elsewhere: { index, play }.
+  const [quranOpen, setQuranOpen] = useState(null);
+  const recitation = useRecitation();
   // Something is playing (Live TV, a film, music): no screensaver or reminders.
   const tvPlaying = liveTvPlaying || jfPlaying;
   const [gamePlaying, setGamePlaying] = useState(false);
@@ -103,6 +134,7 @@ export default function App() {
     () => prayerSchedule(new Date(minute * 60000 + 500), settings.location, settings.prayer),
     [minute, settings.location, settings.prayer],
   );
+  const ramadan = useMemo(() => ramadanInfo(new Date(minute * 60000), schedule, settings), [minute, schedule, settings]);
   const hour = Math.floor(minute / 60);
   const eid = useMemo(() => eidToday(new Date(hour * 3600000), settings.prayer.hijriOffset), [hour, settings.prayer.hijriOffset]);
   // "Wallpapers from my location": photos of the country / city in Settings.
@@ -155,8 +187,13 @@ export default function App() {
   useLayoutEffect(() => {
     pageRef.current = page;
   });
+  const allowedRef = useRef(null);
+  useLayoutEffect(() => {
+    allowedRef.current = kidsOn ? kidsPages : null;
+  });
   const go = useCallback((p, sec) => {
     clearTimeout(previewTimer.current);
+    if (allowedRef.current && !allowedRef.current.includes(p)) p = "home";
     if (sec) setSection(sec);
     if (p === pageRef.current) {
       restoreMain();
@@ -169,6 +206,7 @@ export default function App() {
   // scrolling past entries doesn't build every page on the way.
   const preview = useCallback((p) => {
     clearTimeout(previewTimer.current);
+    if (allowedRef.current && !allowedRef.current.includes(p)) return;
     previewTimer.current = setTimeout(() => setPage(p), 260);
   }, []);
 
@@ -226,7 +264,7 @@ export default function App() {
 
   // LB / RB (PageUp / PageDown) switch sidebar pages; Menu jumps to the sidebar.
   useEffect(() => {
-    const ORDER = ["search", "home", "livetv", "apps", "games", "prayer", "news", "settings"];
+    const ORDER = kidsOn ? kidsPages : ["search", "home", "livetv", "apps", "games", "prayer", "quran", "cameras", "news", "settings"];
     const onKey = (e) => {
       if (e.defaultPrevented || document.querySelector("[data-nav-scope]")) return;
       if (e.key === "PageUp" || e.key === "PageDown") {
@@ -244,7 +282,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [page, go]);
+  }, [page, go, kidsOn, kidsPages]);
 
   // ---- Idle detection & screensaver -------------------------------------
   useEffect(() => {
@@ -313,6 +351,7 @@ export default function App() {
     !jellyfin &&
     !adhan &&
     !tvPlaying &&
+    !recitation.active &&
     !(reminder?.kind === "takbir" && reminder.sound) &&
     (amb.onlyHome ? page === "home" || !!screensaver : true);
   useEffect(() => {
@@ -335,7 +374,9 @@ export default function App() {
         fired.current.add(id);
         setScreensaver(null);
         setAdhan(p);
-        if (settings.notify?.adhan !== false) notifyPhones(settings.notify, t("Adhan · {prayer}", { prayer: t(p.en) }), t("It's time for {prayer}.", { prayer: t(p.en) }), "mosque");
+        const iftar = ramadan && p.key === "maghrib";
+        if (iftar && settings.ramadan?.notify !== false) notifyPhones(settings.notify, t("Iftar time"), `${IFTAR_DUA.ar}\n${t(IFTAR_DUA.en)}`, "crescent_moon");
+        else if (settings.notify?.adhan !== false) notifyPhones(settings.notify, t("Adhan · {prayer}", { prayer: t(p.en) }), t("It's time for {prayer}.", { prayer: t(p.en) }), "mosque");
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -362,6 +403,188 @@ export default function App() {
       setReminder({ kind: "istighfar", ...p });
     }
   }, [now, settings.reminders, settings.prayer.hijriOffset, settings.adhan.volume, schedule, adhan, reminder, launching, appOpen, tvPlaying]);
+
+  // ---- Ramadan: suhoor alarm, iftar (when the Adhan is off), Laylat al-Qadr ----
+  useEffect(() => {
+    if (!ramadan || !loaded) return;
+    const r = settings.ramadan || {};
+    const fire = (id, make) => {
+      if (fired.current.has(id)) return false;
+      fired.current.add(id);
+      make();
+      return true;
+    };
+    const within = (time) => now - time >= 0 && now - time < 90000;
+    const day = schedule.today.fajr.toDateString();
+    const alarmAt = new Date(ramadan.suhoorEnds - (r.suhoorMinutes ?? 30) * 60000);
+    if (r.suhoorAlarm !== false && within(alarmAt))
+      fire(`suhoor-${alarmAt.toDateString()}`, () => {
+        const title = t("Suhoor ends in {m} min", { m: r.suhoorMinutes ?? 30 });
+        setScreensaver(null);
+        playChime(settings.adhan.volume);
+        setReminder({ kind: "suhoor", title, ar: SUHOOR_HADITH.ar, en: SUHOOR_HADITH.en, duration: 60000 });
+        if (r.notify !== false) notifyPhones(settings.notify, title, `${SUHOOR_HADITH.ar}\n${t(SUHOOR_HADITH.en)}`, "crescent_moon");
+      });
+    if (!settings.adhan.enabled && within(schedule.today.maghrib))
+      fire(`iftar-${day}`, () => {
+        playChime(settings.adhan.volume);
+        setReminder({ kind: "iftar", title: t("Iftar time"), ar: IFTAR_DUA.ar, en: IFTAR_DUA.en, duration: 45000 });
+        if (r.notify !== false) notifyPhones(settings.notify, t("Iftar time"), `${IFTAR_DUA.ar}\n${t(IFTAR_DUA.en)}`, "crescent_moon");
+      });
+    const qadrAt = new Date(schedule.today.isha.getTime() + 30 * 60000);
+    if (r.qadr !== false && ramadan.oddNight && within(qadrAt))
+      fire(`qadr-${day}`, () => {
+        setReminder({ kind: "qadr", title: t("Tonight may be Laylat al-Qadr (night {n})", { n: ramadan.night }), ar: QADR_DUA.ar, en: QADR_DUA.en, duration: 30000 });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [now, ramadan, loaded]);
+
+  // ---- Kids profile: daily minutes and bedtime ------------------------------
+  const lockReason = useMemo(() => kidsLock(new Date(minute * 60000), kids), [minute, kids]);
+  const counted = useRef(0);
+  useEffect(() => {
+    if (!kidsOn || !loaded || lockReason || screensaver || counted.current === minute) return;
+    if (!counted.current) {
+      counted.current = minute; // start counting from the next minute
+      return;
+    }
+    counted.current = minute;
+    const day = todayKey(new Date(minute * 60000));
+    update("kids.usage", (u = {}) => ({ date: day, minutes: (u.date === day ? u.minutes || 0 : 0) + 1 }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minute, kidsOn, loaded, lockReason, screensaver]);
+  // Locked: everything that's playing stops.
+  useEffect(() => {
+    if (!lockReason) return;
+    closeApp();
+    playerCommand("quit").catch(() => {});
+    invoke("pip_stop").catch(() => {});
+    pauseRecitation();
+  }, [lockReason]);
+  // A page the Kids profile doesn't have shows Home instead.
+  const shownPage = kidsOn && !kidsPages.includes(page) ? "home" : page;
+  const setKids = useCallback(
+    (on) => {
+      update("kids.active", on);
+      setToast(on ? t("Kids profile is on") : t("Kids profile is off"));
+      if (on) go("home");
+    },
+    [update, go, t],
+  );
+  const ringRef = useRef(null);
+  const setKidsRef = useRef(setKids);
+  useLayoutEffect(() => {
+    setKidsRef.current = setKids;
+  });
+
+  // ---- Sleep timer ------------------------------------------------------------
+  // sleep: { until } (a time) or { end: true } (when what's playing finishes).
+  const [sleep, setSleep] = useState(null);
+  const [sleepMenu, setSleepMenu] = useState(false);
+  const [sleepDark, setSleepDark] = useState(false);
+  const sleepAction = settings.sleepAction || "screen";
+  const stopEverything = useCallback(() => {
+    closeApp();
+    playerCommand("quit").catch(() => {});
+    invoke("pip_stop").catch(() => {});
+    pauseRecitation();
+    setJellyfin(null);
+    go("home");
+  }, [go]);
+  const goToSleep = useCallback(() => {
+    setSleep(null);
+    stopEverything();
+    if (sleepAction === "suspend") system("suspend").catch(() => {});
+    else if (sleepAction === "screen") {
+      setSleepDark(true);
+      system("screen-off").catch(() => {});
+    }
+  }, [sleepAction, stopEverything]);
+  const goToSleepRef = useRef(goToSleep);
+  useLayoutEffect(() => {
+    goToSleepRef.current = goToSleep;
+  });
+  useEffect(() => {
+    if (!sleep?.until) return;
+    const id = setTimeout(() => goToSleepRef.current(), Math.max(0, sleep.until - Date.now()));
+    return () => clearTimeout(id);
+  }, [sleep]);
+  // "At the end of what's playing": the next film / episode starting, the
+  // player closing, or the recitation finishing.
+  useEffect(() => {
+    if (!sleep?.end) return;
+    let index = null;
+    const offs = [
+      listen("media-progress", (p) => {
+        if (index === null) index = p.index;
+        else if (p.index !== index) goToSleepRef.current();
+      }),
+      listen("media-closed", () => goToSleepRef.current()),
+      listen("player-closed", () => goToSleepRef.current()),
+    ];
+    return () => offs.forEach((o) => o.then((f) => f()));
+  }, [sleep]);
+  const recWasActive = useRef(false);
+  useEffect(() => {
+    if (sleep?.end && recWasActive.current && !recitation.active) goToSleepRef.current();
+    recWasActive.current = recitation.active;
+  }, [recitation.active, sleep]);
+  const setSleepTimer = useCallback(
+    (choice) => {
+      if (choice === "off") setSleep(null);
+      else if (choice === "end") setSleep({ end: true });
+      else setSleep({ until: Date.now() + choice * 60000, minutes: choice });
+      setSleepMenu(false);
+      setToast(choice === "off" ? t("Sleep timer off") : choice === "end" ? t("Sleep timer: at the end of what's playing") : t("Sleep timer: {n} min", { n: choice }));
+    },
+    [t],
+  );
+  const sleepLeft = sleep?.until ? sleep.until - now : null;
+  const mediaPlaying = jfPlaying || liveTvPlaying || recitation.active;
+
+  // ---- Doorbell -----------------------------------------------------------------
+  const [doorbell, setDoorbell] = useState(null); // { name, seconds, at }
+  const lastRing = useRef(0);
+  useEffect(() => {
+    if (loaded && !settings.cameras?.doorbell?.key) update("cameras.doorbell.key", Math.random().toString(36).slice(2, 12));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded]);
+  const ringDoorbell = useCallback(
+    (cameraId, test = false) => {
+      const c = settings.cameras || {};
+      const d = c.doorbell || {};
+      if (d.enabled === false && !test) return;
+      if (Date.now() - lastRing.current < 15000 && !test) return;
+      lastRing.current = Date.now();
+      const cam = (c.list || []).find((x) => x.id === (cameraId || d.camera));
+      const seconds = d.seconds ?? 45;
+      setScreensaver(null);
+      if (sleepDark) {
+        setSleepDark(false);
+        system("screen-on").catch(() => {});
+      }
+      if (d.chime !== false) {
+        playChime(Math.max(0.5, settings.adhan.volume));
+        setTimeout(() => playChime(Math.max(0.5, settings.adhan.volume)), 700);
+      }
+      setDoorbell({ name: cam?.name || "", seconds, at: Date.now() });
+      if (cam && isTauri()) {
+        popupCamera(cam, settings, "tr").catch((e) => setToast(String(e)));
+        setTimeout(() => invoke("pip_stop").catch(() => {}), seconds * 1000);
+      }
+      if (d.notify !== false) notifyPhones(settings.notify, t("Doorbell"), t("Someone's at the door"), "bell");
+    },
+    [settings, sleepDark, t],
+  );
+  useDoorbell(settings, ringDoorbell);
+  useLayoutEffect(() => {
+    ringRef.current = ringDoorbell;
+  });
+
+  // The Adhan, Live TV and films pause a recitation.
+  useEffect(() => {
+    if (adhan || tvPlaying || appOpen) pauseRecitation();
+  }, [adhan, tvPlaying, appOpen]);
 
   const closeAdhan = useCallback(() => {
     setAdhan(null);
@@ -395,6 +618,10 @@ export default function App() {
   // opts.chrome: open in Chrome even if the app normally opens inside.
   const onLaunch = useCallback(
     async (app, opts = {}) => {
+      if (kidsOn && app.id !== "cast" && !kidsMay(app)) {
+        setToast(t("Ask a parent to allow {name}", { name: app.name }));
+        return;
+      }
       // Jellyfin opens in YousufOS's own Jellyfin app (Y on the tile: its web page).
       if (app.id === "jellyfin" && settings.jellyfin?.native !== false && !opts.chrome && !opts.web) {
         setJfStart(opts.jfStart || null);
@@ -414,7 +641,7 @@ export default function App() {
       // has loaded ("app-shown"); Chrome apps cover it after a few seconds.
       setTimeout(() => setLaunching(null), isTauri() ? (inside ? 12000 : 4000) : 1200);
     },
-    [settings.browser, settings.appView, settings.osk, settings.dpad, settings.jellyfin?.native, i18n.lang, t],
+    [settings.browser, settings.appView, settings.osk, settings.dpad, settings.jellyfin?.native, i18n.lang, t, kidsOn, kidsMay],
   );
 
   useEffect(() => {
@@ -433,9 +660,16 @@ export default function App() {
     previewTakbir: () => setReminder({ kind: "takbir", eid: "Eid al-Adha", sound: settings.reminders.takbirSound, ...TAKBIR }),
     previewScreensaver: () => setTimeout(() => setScreensaver(settings.screensaver.mode), 300),
     previewMorning: () => setTimeout(() => setMorning(true), 200),
+    previewSuhoor: () => {
+      playChime(settings.adhan.volume);
+      setReminder({ kind: "suhoor", title: t("Suhoor ends in {m} min", { m: settings.ramadan?.suhoorMinutes ?? 30 }), ar: SUHOOR_HADITH.ar, en: SUHOOR_HADITH.en, duration: 20000 });
+    },
+    previewIftar: () => setAdhan({ ...schedule.list.find((p) => p.key === "maghrib"), time: new Date(), preview: "iftar" }),
     detectLocation: runDetect,
     rescanImages,
-  }), [schedule.next, settings.reminders, settings.adhan.volume, settings.screensaver.mode, runDetect, rescanImages]);
+    setKids: (on) => setKidsRef.current(on),
+    ringDoorbell: () => ringRef.current(null, true),
+  }), [schedule.next, schedule.list, settings.reminders, settings.ramadan, settings.adhan.volume, settings.screensaver.mode, runDetect, rescanImages, t]);
 
   // ---- Phone remote / admin panel ----------------------------------------
   useAdminServer(settings.admin);
@@ -445,7 +679,7 @@ export default function App() {
     if (jellyfin) return { title: "Jellyfin" };
     if (appOpen && lastApp) return { title: lastApp.name };
     if (liveTvPlaying) return { title: t("Live TV") };
-    return { title: t({ home: "Home", livetv: "Live TV", apps: "Apps", games: "Games", prayer: "Prayer", news: "News", settings: "Settings", search: "Search" }[page] || "Home") };
+    return { title: t({ home: "Home", livetv: "Live TV", apps: "Apps", games: "Games", prayer: "Prayer", quran: "Qur'an", cameras: "Cameras", news: "News", settings: "Settings", search: "Search" }[page] || "Home") };
   }, [jfPlaying, jellyfin, appOpen, lastApp, liveTvPlaying, page, t]);
   const cast = useCallback(
     async (raw) => {
@@ -496,6 +730,39 @@ export default function App() {
     restore: (cfg) => {
       replace(cfg);
       setToast(t("Settings restored from the backup"));
+    },
+    status: () => ({ kids: kidsOn, kidsLocked: lockReason || null, sleep: sleep ? (sleep.end ? "end" : Math.round((sleep.until - Date.now()) / 60000)) : null }),
+    extra: {
+      "cameras.list": () => ({ cameras: (settings.cameras?.list || []).map((c) => ({ id: c.id, name: c.name })), doorbell: settings.cameras?.doorbell?.camera || "" }),
+      "camera.snapshot": async ({ id }) => {
+        const cam = (settings.cameras?.list || []).find((c) => c.id === id);
+        if (!cam) return { error: "No such camera" };
+        const r = await cameraSnapshot(cam, settings);
+        return { ok: true, at: r.at };
+      },
+      "camera.show": async ({ id }) => {
+        const cam = (settings.cameras?.list || []).find((c) => c.id === id);
+        if (!cam) return { error: "No such camera" };
+        await watchCamera(cam, settings);
+        return { ok: true };
+      },
+      "doorbell.test": () => {
+        ringDoorbell(null, true);
+        return { ok: true };
+      },
+      "sleep.set": ({ minutes }) => {
+        setSleepTimer(minutes === "end" || minutes === "off" ? minutes : Math.max(1, Math.min(600, +minutes || 30)));
+        return { ok: true };
+      },
+      "kids.set": ({ on }) => {
+        if (on && !kids.pin) return { error: "Set a parent PIN on the TV first (Settings → Kids profile)." };
+        setKids(!!on);
+        return { ok: true };
+      },
+      "kids.more": ({ minutes = 30 }) => {
+        update("kids.unlockUntil", Date.now() + Math.min(240, +minutes || 30) * 60000);
+        return { ok: true };
+      },
     },
   });
 
@@ -549,11 +816,13 @@ export default function App() {
     home: (
       <Home
         {...common}
+        settings={jfSettings}
         apps={apps}
         wallpaper={wallpaper}
         onLaunch={onLaunch}
         eid={eid}
-        onJellyfin={(item) => {
+        ramadan={ramadan}
+        onJellyfin={kidsOn && !kidsAccount ? null : (item) => {
           setJfStart({ item, play: true });
           setJellyfin(normalizeServer(settings.appUrls?.jellyfin || "http://localhost:8096"));
         }}
@@ -571,10 +840,23 @@ export default function App() {
         }}
       />
     ),
-    livetv: <LiveTV settings={settings} update={update} paused={!!adhan} onPlayingChange={setTvPlaying} />,
+    livetv: <LiveTV settings={settings} update={update} paused={!!adhan} onPlayingChange={setTvPlaying} kids={kidsOn} />,
     games: <Games settings={settings} update={update} onPlayingChange={setGamePlaying} />,
-    prayer: <Prayer {...common} />,
+    prayer: (
+      <Prayer
+        {...common}
+        ramadan={ramadan}
+        update={update}
+        onReadJuz={async (j) => {
+          const q = await loadQuran();
+          setQuranOpen({ index: q.juzStart[j - 1] });
+          go("quran");
+        }}
+      />
+    ),
+    quran: <Quran key={quranOpen ? "open" : "index"} settings={settings} update={update} open={quranOpen} onOpened={() => setQuranOpen(null)} />,
     news: <News settings={settings} onOpen={onLaunch} />,
+    cameras: <Cameras settings={settings} go={go} />,
     settings: (
       <Settings settings={settings} update={update} section={section} setSection={setSection} actions={actions} customCount={custom.length} />
     ),
@@ -587,6 +869,10 @@ export default function App() {
 
       <Sidebar
         page={page}
+        kids={kidsOn ? kidsPages : null}
+        onExitKids={() => setKidsPin(true)}
+        sleepLabel={sleep ? (sleep.end ? t("At the end") : formatCountdown(Math.max(60000, sleepLeft), t)) : null}
+        onSleep={() => setSleepMenu(true)}
         onPreview={preview}
         onChoose={go}
         clock={formatTime(new Date(minute * 60000), settings.clock24)}
@@ -595,10 +881,10 @@ export default function App() {
       />
 
       <main data-main className="relative z-10 flex h-full flex-col">
-        <div key={page} className="page-in min-h-0 flex-1">
-          {pages[page]}
+        <div key={shownPage} className="page-in min-h-0 flex-1">
+          {pages[shownPage]}
         </div>
-        {page === "home" && settings.news.enabled && <NewsTicker />}
+        {shownPage === "home" && settings.news.enabled && !kidsOn && <NewsTicker />}
       </main>
 
       {toast && (
@@ -606,11 +892,11 @@ export default function App() {
           {toast}
         </div>
       )}
-      {jellyfin && (
+      {jellyfin && !lockReason && (
         <JellyfinApp
           server={jellyfin}
           start={jfStart}
-          settings={settings}
+          settings={jfSettings}
           update={update}
           timeLabel={formatTime(new Date(minute * 60000), settings.clock24)}
           onPlayingChange={setJfPlaying}
@@ -627,13 +913,61 @@ export default function App() {
           }}
         />
       )}
+      {page !== "quran" && !jellyfin && <NowReciting onOpen={() => go("quran")} />}
       {castPhoto && <CastPhoto src={castPhoto} onClose={() => setCastPhoto(null)} />}
       {morning && <MorningScreen now={now} settings={settings} schedule={schedule} onClose={() => setMorning(false)} />}
       {launching && <LaunchSplash app={launching} />}
       {volume && <VolumeHud key={volume.at} level={volume.level} onDone={() => setVolume(null)} />}
-      {screensaver && <Screensaver mode={screensaver} fallback={builtIn} settings={settings} schedule={schedule} wallpapers={wallpapers} />}
+      {screensaver && !lockReason && <Screensaver mode={screensaver} fallback={builtIn} settings={settings} schedule={schedule} wallpapers={wallpapers} />}
       {reminder && !adhan && <ReminderBanner reminder={reminder} volume={settings.adhan.volume} onDone={() => setReminder(null)} />}
-      {adhan && <AdhanOverlay prayer={adhan} settings={settings} onClose={closeAdhan} />}
+      {doorbell && <DoorbellBanner key={doorbell.at} name={doorbell.name} seconds={doorbell.seconds} onDone={() => setDoorbell(null)} />}
+      {sleepMenu && (
+        <SleepMenu
+          sleep={sleep}
+          canEnd={mediaPlaying}
+          action={sleepAction}
+          onSet={setSleepTimer}
+          onAction={(a) => update("sleepAction", a)}
+          onClose={() => setSleepMenu(false)}
+        />
+      )}
+      {sleep?.until && sleepLeft <= 60000 && !sleepMenu && (
+        <SleepWarning
+          seconds={Math.max(0, Math.round(sleepLeft / 1000))}
+          onMore={() => setSleep({ until: Date.now() + 15 * 60000, minutes: 15 })}
+          onCancel={() => setSleepTimer("off")}
+        />
+      )}
+      {sleepDark && (
+        <SleepScreen
+          onWake={() => {
+            setSleepDark(false);
+            system("screen-on").catch(() => {});
+          }}
+        />
+      )}
+      {lockReason && (
+        <KidsLock
+          reason={lockReason}
+          kids={kids}
+          onMore={() => update("kids.unlockUntil", Date.now() + 30 * 60000)}
+          onExit={() => setKids(false)}
+        />
+      )}
+      {kidsPin && (
+        <PinPad
+          title={t("Parent PIN")}
+          hint={t("Back to the full YousufOS")}
+          onCancel={() => setKidsPin(false)}
+          onSubmit={(pin) => {
+            if (pin !== kids.pin) return false;
+            setKidsPin(false);
+            setKids(false);
+            return true;
+          }}
+        />
+      )}
+      {adhan && <AdhanOverlay prayer={adhan} settings={settings} onClose={closeAdhan} iftar={adhan.preview === "iftar" || (!!ramadan && settings.ramadan?.iftarDua !== false && adhan.key === "maghrib")} />}
     </div>
   );
 }

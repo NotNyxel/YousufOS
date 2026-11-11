@@ -14,11 +14,14 @@ use serde::Deserialize;
 use tauri::{AppHandle, Emitter, Manager};
 
 mod admin;
+mod cameras;
+mod monitor;
 mod cdp;
 mod embed;
 mod gamepad;
 mod media;
 mod player;
+mod quran;
 
 /// The streaming app (Chrome process) currently on screen.
 #[derive(Default)]
@@ -361,7 +364,7 @@ fn http() -> &'static reqwest::Client {
     static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
     CLIENT.get_or_init(|| {
         reqwest::Client::builder()
-            .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36 YousufOS/1.7")
+            .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36 YousufOS/1.8")
             .timeout(Duration::from_secs(25))
             .build()
             .expect("http client")
@@ -516,6 +519,12 @@ pub(crate) fn do_system_action(app: AppHandle, action: String) -> Result<(), Str
         _ => None,
     };
     match (action.as_str(), cmd) {
+        // Sleep timer: switch the display off (X11; elsewhere YousufOS just shows black).
+        ("screen-off", _) | ("screen-on", _) => {
+            let mode = if action == "screen-off" { "off" } else { "on" };
+            let _ = Command::new("xset").args(["dpms", "force", mode]).spawn();
+            Ok(())
+        }
         ("exit", _) => {
             close_apps(&app);
             player::stop(&app);
@@ -1126,6 +1135,16 @@ pub fn run() {
             media::jf_socket_open,
             media::jf_socket_send,
             media::jf_socket_close,
+            cameras::camera_snapshot,
+            quran::quran_dir,
+            quran::quran_text_save,
+            quran::quran_text_read,
+            quran::quran_text_delete,
+            quran::quran_status,
+            quran::quran_audio_have,
+            quran::quran_audio_get,
+            quran::quran_audio_cancel,
+            quran::quran_audio_delete,
         ])
         .run(tauri::generate_context!())
         .expect("error while running YousufOS");

@@ -39,6 +39,7 @@
     settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
     system: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9zM9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>',
     kb: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
+    server: '<rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01"/>',
   };
   const icon = (name) => {
     const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -215,7 +216,48 @@
       h("h2", {}, "Keyboard"),
       h("div", { class: "field" }, text, h("button", { class: "btn primary", onclick: send }, "Send")),
       h("p", { class: "muted" }, "Types into the box that's selected on the TV (search, sign-in, the browser)."),
+      extrasView(),
     );
+  }
+
+  // Sleep timer and the Kids profile, under the remote.
+  function extrasView() {
+    const box = h("div", {});
+    const sleepNote = h("p", { class: "muted" });
+    const kidsNote = h("p", { class: "muted" });
+    const setSleep = (minutes) => safe(async () => {
+      await call("sleep.set", { minutes });
+      toast(minutes === "off" ? "Sleep timer off" : "Sleep timer set");
+      load();
+    });
+    const kids = (on) => safe(async () => {
+      await call("kids.set", { on });
+      toast(on ? "Kids profile on" : "Kids profile off");
+      load();
+    });
+    const load = safe(async () => {
+      const st = await call("status");
+      sleepNote.textContent = st.sleep == null ? "Off" : st.sleep === "end" ? "At the end of what's playing" : `In about ${Math.max(1, st.sleep)} min`;
+      kidsNote.textContent = st.kids ? (st.kidsLocked ? `On · locked (${st.kidsLocked === "bedtime" ? "bedtime" : "time's up"})` : "On") : "Off";
+    });
+    box.append(
+      h("h2", {}, "Sleep timer"),
+      sleepNote,
+      h("div", { class: "btns" },
+        ...[15, 30, 45, 60, 90].map((m) => h("button", { class: "btn small", onclick: setSleep(m) }, `${m} min`)),
+        h("button", { class: "btn small", onclick: setSleep("end") }, "End of video"),
+        h("button", { class: "btn small", onclick: setSleep("off") }, "Off"),
+      ),
+      h("h2", {}, "Kids profile"),
+      kidsNote,
+      h("div", { class: "btns" },
+        h("button", { class: "btn small primary", onclick: kids(true) }, "Turn on"),
+        h("button", { class: "btn small", onclick: kids(false) }, "Turn off"),
+        h("button", { class: "btn small", onclick: safe(async () => { await call("kids.more", { minutes: 30 }); toast("30 more minutes"); load(); }) }, "+30 minutes"),
+      ),
+    );
+    load();
+    return box;
   }
 
   // ------------------------------------------------------------- watch
@@ -254,7 +296,8 @@
     const apps = h("div", { class: "apps" });
     const chans = h("div", { class: "list" });
     const q = h("input", { type: "text", placeholder: "Find a channel" });
-    root.append(h("h2", {}, "On the TV"), now, h("h2", {}, "Apps"), apps, h("h2", {}, "Live TV"), h("div", { style: "margin-bottom:10px" }, q), chans);
+    const cams = h("div", { class: "cams" });
+    root.append(h("h2", {}, "On the TV"), now, h("h2", {}, "Cameras"), cams, h("h2", {}, "Apps"), apps, h("h2", {}, "Live TV"), h("div", { style: "margin-bottom:10px" }, q), chans);
     const showNow = (s) => {
       now.replaceChildren(
         h("div", { class: "card" },
@@ -291,10 +334,44 @@
       showNow(st);
       apps.replaceChildren(...(ap.apps || []).map((a) => h("button", { class: "app", style: `background:${/^(#[0-9a-f]{3,8}|linear-gradient\([#0-9a-z%,.\s]+\))$/i.test(a.bg || "") ? a.bg : "#1d2028"}`, onclick: safe(async () => { await call("openApp", { id: a.id }); toast(`Opening ${a.name}`); }) }, a.name)));
       renderChannels(ch.channels || []);
+      loadCameras(cams);
     });
     load();
     return root;
   }
+
+  // Camera pictures come through the TV (fetched with the token, shown as blobs).
+  const shotUrls = {};
+  async function cameraPicture(id) {
+    const res = await fetch(`/api/snapshot?id=${encodeURIComponent(id)}&t=${Date.now()}`, { headers: { "X-Token": token || "" } });
+    if (!res.ok) return null;
+    if (shotUrls[id]) URL.revokeObjectURL(shotUrls[id]);
+    shotUrls[id] = URL.createObjectURL(await res.blob());
+    return shotUrls[id];
+  }
+  const loadCameras = safe(async (box) => {
+    const r = await call("cameras.list");
+    if (!(r.cameras || []).length) {
+      box.replaceChildren(h("p", { class: "muted" }, "No cameras yet. Add them on the TV: Settings → Cameras."));
+      return;
+    }
+    box.replaceChildren(
+      ...r.cameras.map((c) => {
+        const img = h("img", { alt: "", class: "cam" });
+        const card = h("div", { class: "card" },
+          img,
+          h("div", { class: "row", style: "border:0;padding:8px 0 0" },
+            h("div", { class: "grow t" }, c.name, c.id === r.doorbell ? " 🔔" : ""),
+            h("button", { class: "btn small", onclick: safe(async () => { await call("camera.snapshot", { id: c.id }); img.src = (await cameraPicture(c.id)) || ""; }) }, "Refresh"),
+            h("button", { class: "btn small primary", onclick: safe(async () => { await call("camera.show", { id: c.id }); toast("On the TV"); }) }, "Show on TV"),
+          ),
+        );
+        call("camera.snapshot", { id: c.id }).then(async () => (img.src = (await cameraPicture(c.id)) || ""), () => {});
+        return card;
+      }),
+      h("div", { class: "btns" }, h("button", { class: "btn small", onclick: safe(async () => { await call("doorbell.test"); toast("Ringing on the TV"); }) }, "Test the doorbell")),
+    );
+  });
 
   function recordDialog(c) {
     const mins = h("input", { type: "number", min: "5", max: "600", value: "60" });
@@ -575,6 +652,72 @@
     return root;
   }
 
+  // ------------------------------------------------------------- server monitor
+  function serverView() {
+    const root = h("div", { class: "wrap" }, header("Server"));
+    const body = h("div", {}, h("p", { class: "muted" }, "Loading…"));
+    root.append(body);
+    const bar = (pct) => h("div", { class: "bar" }, h("i", { style: `width:${Math.max(2, Math.min(100, pct || 0))}%` }));
+    const rate = (b) => `${fmtBytes(b)}/s`;
+    const pill = (text, good) => h("span", { class: "pill " + (good ? "ok" : "bad") }, text);
+    const load = safe(async () => {
+      const m = await api("/api/monitor");
+      const memPct = m.memory?.total ? (100 * m.memory.used) / m.memory.total : 0;
+      const sections = [
+        h("div", { class: "stats" },
+          h("div", { class: "card stat" }, h("div", { class: "l" }, "Processor"), h("div", { class: "v" }, `${Math.round(m.cpu)}%`), bar(m.cpu)),
+          h("div", { class: "card stat" }, h("div", { class: "l" }, "Memory"), h("div", { class: "v" }, `${fmtBytes(m.memory?.used)} of ${fmtBytes(m.memory?.total)}`), bar(memPct)),
+          h("div", { class: "card stat" }, h("div", { class: "l" }, "Load"), h("div", { class: "v" }, (m.load || []).map((x) => x.toFixed(2)).join("  "))),
+          h("div", { class: "card stat" }, h("div", { class: "l" }, "Up for"), h("div", { class: "v" }, fmtTime(m.uptime))),
+        ),
+        h("p", { class: "muted" }, `${m.host || ""} · ${m.model || ""}`),
+        h("h2", {}, "Cores"),
+        h("div", { class: "cores" }, ...(m.cores || []).map((c, i) => h("div", { class: "core" }, h("div", { class: "d" }, `${i + 1}`), bar(c), h("div", { class: "d" }, `${Math.round(c)}%`)))),
+        h("h2", {}, "Storage"),
+        h("div", { class: "list" }, ...(m.disks || []).map((d) => h("div", { class: "row" }, h("div", { class: "grow" }, h("div", { class: "t" }, d.mount), h("div", { class: "d" }, `${fmtBytes(d.used)} used · ${fmtBytes(d.free)} free · ${d.fs}`), bar((100 * d.used) / d.size))))),
+        h("h2", {}, "Network"),
+        h("div", { class: "list" }, ...(m.net || []).map((n) => h("div", { class: "row" }, h("div", { class: "grow" }, h("div", { class: "t" }, n.name), h("div", { class: "d" }, `↓ ${rate(n.rx)}   ↑ ${rate(n.tx)}   · total ↓ ${fmtBytes(n.rxTotal)} ↑ ${fmtBytes(n.txTotal)}`))))),
+        (m.temps || []).length ? h("h2", {}, "Temperatures") : null,
+        (m.temps || []).length ? h("div", { class: "list" }, ...m.temps.map((tp) => h("div", { class: "row" }, h("div", { class: "grow t" }, tp.name), h("div", { class: tp.c >= 85 ? "t hot" : "t" }, `${tp.c}°C`)))) : null,
+        h("h2", {}, "Docker"),
+        m.docker?.available
+          ? h("div", { class: "list" }, ...((m.docker.containers || []).length ? m.docker.containers : [{ none: true }]).map((c) =>
+              c.none
+                ? h("div", { class: "row" }, h("div", { class: "grow d" }, "No containers"))
+                : h("div", { class: "row" },
+                    h("div", { class: "grow" }, h("div", { class: "t" }, c.name, " ", pill(c.state, c.state === "running")), h("div", { class: "d" }, `${c.image} · ${c.status}`)),
+                    ...(c.state === "running" ? ["restart", "stop"] : ["start"]).map((a) =>
+                      h("button", { class: "btn small" + (a === "stop" ? " danger" : ""), onclick: safe(async () => {
+                        if (a === "stop" && !confirm(`Stop ${c.name}?`)) return;
+                        await api("/api/docker", { body: { name: c.name, action: a } });
+                        toast(`${a[0].toUpperCase() + a.slice(1)}ed ${c.name}`.replace("Stoped", "Stopped"));
+                        load();
+                      }) }, a[0].toUpperCase() + a.slice(1)),
+                    ),
+                  ),
+            ))
+          : h("p", { class: "muted" }, m.docker?.reason || "Docker isn't available"),
+        h("h2", {}, "Services"),
+        (m.services || []).length
+          ? h("div", { class: "list" }, ...m.services.map((sv) => h("div", { class: "row" }, h("div", { class: "grow t" }, sv.name), pill(sv.state, sv.state === "active"))))
+          : h("p", { class: "muted" }, "No services to show."),
+        h("h2", {}, "Tailscale"),
+        m.tailscale?.available
+          ? h("div", { class: "list" },
+              h("div", { class: "row" }, h("div", { class: "grow" }, h("div", { class: "t" }, m.tailscale.name || "This TV"), h("div", { class: "d" }, (m.tailscale.ips || []).join(" · "))), pill(m.tailscale.state || "", m.tailscale.state === "Running")),
+              ...(m.tailscale.peers || []).map((p) => h("div", { class: "row" }, h("div", { class: "grow" }, h("div", { class: "t" }, p.name), h("div", { class: "d" }, p.os || "")), pill(p.online ? "online" : "offline", p.online))),
+            )
+          : h("p", { class: "muted" }, "Tailscale isn't running on the TV."),
+        h("h2", {}, "Busiest programs"),
+        h("div", { class: "list" }, ...(m.processes || []).map((p) => h("div", { class: "row" }, h("div", { class: "grow" }, h("div", { class: "t" }, p.name), h("div", { class: "d" }, `PID ${p.pid}`)), h("div", { class: "d" }, `${p.cpu}% CPU · ${p.mem}% RAM`)))),
+      ];
+      body.replaceChildren(...sections.filter(Boolean));
+    });
+    load();
+    const timer = setInterval(() => (tab === "server" ? load() : clearInterval(timer)), 5000);
+    return root;
+  }
+
   // ------------------------------------------------------------- shell
   function header(title) {
     return h("div", { class: "top" }, h("h1", {}, title), h("span", { class: "chip" }, location.hostname));
@@ -585,6 +728,7 @@
     ["files", "Files", "files", filesView],
     ["settings", "Settings", "settings", settingsView],
     ["system", "System", "system", systemView],
+    ["server", "Server", "server", serverView],
   ];
   function render() {
     if (!token) {

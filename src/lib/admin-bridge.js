@@ -29,6 +29,33 @@ export function settingsSchema(s, t) {
       ],
     },
     {
+      title: t("Ramadan"),
+      items: [
+        { key: "ramadan.mode", label: t("Ramadan mode"), type: "select", value: s.ramadan?.mode || "auto", options: [["auto", t("Automatic")], ["on", t("On")], ["off", t("Off")]] },
+        { key: "ramadan.suhoorAlarm", label: t("Suhoor alarm"), type: "toggle", value: s.ramadan?.suhoorAlarm !== false },
+        { key: "ramadan.suhoorMinutes", label: t("Minutes before Fajr"), type: "number", value: s.ramadan?.suhoorMinutes ?? 30 },
+        { key: "ramadan.qadr", label: t("Laylat al-Qadr reminders"), type: "toggle", value: s.ramadan?.qadr !== false },
+      ],
+    },
+    {
+      title: t("Kids profile"),
+      items: [
+        { key: "kids.limit", label: t("Minutes a day (0 = no limit)"), type: "number", value: s.kids?.limit ?? 120 },
+        { key: "kids.bedtime", label: t("Bedtime"), type: "time", value: s.kids?.bedtime || "20:30" },
+        { key: "kids.wake", label: t("Morning"), type: "time", value: s.kids?.wake || "06:30" },
+        { key: "kids.tv", label: t("Live TV"), type: "toggle", value: s.kids?.tv !== false },
+        { key: "kids.games", label: t("Games"), type: "toggle", value: s.kids?.games !== false },
+      ],
+    },
+    {
+      title: t("Doorbell"),
+      items: [
+        { key: "cameras.doorbell.enabled", label: t("Show the doorbell camera when it rings"), type: "toggle", value: s.cameras?.doorbell?.enabled !== false },
+        { key: "cameras.doorbell.chime", label: t("Doorbell chime on the TV"), type: "toggle", value: s.cameras?.doorbell?.chime !== false },
+        { key: "cameras.doorbell.notify", label: t("Tell my phones"), type: "toggle", value: s.cameras?.doorbell?.notify !== false },
+      ],
+    },
+    {
       title: t("Morning screen"),
       items: [
         { key: "morning.enabled", label: t("Show the morning screen"), hint: t("Weather, prayer times and a hadith at the time you choose"), type: "toggle", value: !!s.morning?.enabled },
@@ -79,7 +106,7 @@ export function useAdminBridge(ctx) {
       const findChannel = async (id) => quickChannels(s).find((x) => x.url === id) || (await allChannels(s)).find((x) => x.url === id);
       switch (action) {
         case "status":
-          return { ...c.screen(), pip: await invoke("pip_running").catch(() => false) };
+          return { ...c.screen(), pip: await invoke("pip_running").catch(() => false), ...(c.status?.() || {}) };
         case "apps":
           return { apps: c.apps.filter((a) => !a.hidden).map((a) => ({ id: a.id, name: a.name, bg: a.bg })) };
         case "openApp": {
@@ -206,6 +233,8 @@ export function useAdminBridge(ctx) {
           await notifyPhones(s.notify, "YousufOS", t("Test notification from your TV"), "white_check_mark");
           return { ok: true };
         default:
+          // Features that keep their state in App (Kids profile, sleep timer, cameras…).
+          if (c.extra?.[action]) return c.extra[action](args, caller);
           return { error: `Unknown action ${action}` };
       }
     };

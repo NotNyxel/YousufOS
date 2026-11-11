@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Heart, LoaderCircle, Radio, TvMinimal } from "lucide-react";
 import TvPlayer from "../components/TvPlayer";
-import { SOURCES, loadSource } from "../lib/iptv";
+import { OFFICIAL, SOURCES, loadSource } from "../lib/iptv";
 import { focusEl } from "../lib/nav";
 import { invoke, isTauri, listen, playExternal } from "../lib/platform";
 import { useI18n } from "../lib/settings-store";
@@ -41,13 +41,20 @@ function ChannelCard({ ch, onOpen, isDefault, isFav, onFav, onPip }) {
   );
 }
 
-function LiveTV({ settings, update, paused, onPlayingChange }) {
+function LiveTV({ settings, update, paused, onPlayingChange, kids = false }) {
   const { t } = useI18n();
   const iptv = settings.iptv;
   const player = iptv.player || "auto";
-  const sources = useMemo(() => [{ id: "fav", label: "Favourites" }, ...SOURCES, ...(iptv.playlists || [])], [iptv.playlists]);
+  const sources = useMemo(
+    () =>
+      kids
+        ? // Kids profile: children's channels and the Qur'an channels only.
+          [SOURCES.find((x) => x.id === "kids"), { id: "kidsquran", label: "Qur'an & Sunnah", channels: OFFICIAL.filter((c) => c.group === "Islamic") }]
+        : [{ id: "fav", label: "Favourites" }, ...SOURCES, ...(iptv.playlists || [])],
+    [iptv.playlists, kids],
+  );
   // 1.3 opens on the new official channels once; after that, the last list used.
-  const [sourceId, setSourceId] = useState(iptv.v13 && iptv.source ? iptv.source : "official");
+  const [sourceId, setSourceId] = useState(kids ? "kids" : iptv.v13 && iptv.source ? iptv.source : "official");
   const [loaded, setLoaded] = useState({ key: null, status: "loading", channels: [] });
   const [playing, setPlaying] = useState(null); // index into channels (built-in player)
   const [notice, setNotice] = useState("");
@@ -88,7 +95,7 @@ function LiveTV({ settings, update, paused, onPlayingChange }) {
     clearTimeout(sourceTimer.current);
     sourceTimer.current = setTimeout(() => {
       setSourceId(id);
-      update({ iptv: { source: id, v13: true } });
+      if (!kids) update({ iptv: { source: id, v13: true } });
     }, 250);
   };
 

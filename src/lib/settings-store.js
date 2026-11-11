@@ -88,6 +88,17 @@ export const DEFAULTS = {
   recordings: { schedule: [] },
   // New versions from a GitHub repository (owner/name; token for a private one).
   updates: { repo: "", token: "", auto: true, lastCheck: 0, skip: "" },
+  // Qur'an: reciter / texts are alquran.cloud edition names; last = verse index (0–6235) last read.
+  quran: { reciter: "ar.alafasy", translation: "en.sahih", showTranslation: true, tafsir: "ar.muyassar", view: "verses", size: 100, last: null, bookmarks: [] },
+  // Ramadan mode: "auto" during Ramadan, "on" (always, e.g. to try it), "off". Trackers by Hijri year.
+  ramadan: { mode: "auto", suhoorAlarm: true, suhoorMinutes: 30, iftarDua: true, qadr: true, notify: true, taraweeh: {}, khatm: {} },
+  // Kids profile: allowed app ids, Live TV (kids & Qur'an channels), games, Qur'an,
+  // a Jellyfin account (userId, "" = no Jellyfin), minutes a day (0 = no limit), bedtime.
+  kids: { active: false, pin: "", apps: ["youtubekids", "quran", "nasaplus"], tv: true, games: true, quran: true, jellyfin: "", limit: 120, bedtime: "20:30", wake: "06:30", usage: {}, unlockUntil: 0 },
+  // Cameras: [{ id, name, url }] or Home Assistant [{ id, name, entity }]. Doorbell: which
+  // camera pops up, the ring entity in Home Assistant and the key for /api/doorbell.
+  cameras: { list: [], haToken: "", doorbell: { enabled: true, camera: "", entity: "", key: "", seconds: 45, chime: true, notify: true } },
+  sleepAction: "screen",
   osk: true, // on-screen keyboard inside apps when the controller selects a text box
   dpad: true, // D-pad / remote arrows jump between buttons and links inside web apps
   showWeather: true,

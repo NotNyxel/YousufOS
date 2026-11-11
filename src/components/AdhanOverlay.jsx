@@ -4,6 +4,7 @@ import { MosqueIcon } from "./icons";
 import { prayerWallpaper } from "../lib/wallpapers";
 import { adhanBegin, adhanEnd, localAudioUrl, playableUrl } from "../lib/platform";
 import { formatTime } from "../lib/prayer";
+import { IFTAR_DUA } from "../lib/ramadan";
 import { useI18n } from "../lib/settings-store";
 
 // Bundled recordings live in public/adhan; a file with the same name in
@@ -34,7 +35,7 @@ async function adhanSource(adhan, prayerKey) {
 }
 
 // Fullscreen notification shown when a prayer time begins.
-export default function AdhanOverlay({ prayer, settings, onClose }) {
+export default function AdhanOverlay({ prayer, settings, onClose, iftar = false }) {
   const { t, locale } = useI18n();
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
@@ -116,6 +117,13 @@ export default function AdhanOverlay({ prayer, settings, onClose }) {
         <div className="arabic mt-[1rem] text-[3rem] font-semibold text-accent">حان الآن موعد أذان {prayer.ar}</div>
         <div className="mt-[1.2rem] text-[1.8rem] text-white/75">{t("The Adhan has begun")} · {formatTime(prayer.time, settings.clock24, locale)}</div>
         <div className="mt-[0.4rem] text-[1.2rem] text-white/50">{settings.location.label}</div>
+        {iftar && (
+          <div className="mt-[2rem] max-w-[60rem] rounded-[1.6rem] bg-black/35 px-[2.4rem] py-[1.2rem] ring-1 ring-accent/40">
+            <div className="text-[1rem] font-bold uppercase tracking-[0.2em] text-accent">{t("Iftar time")} · {t("Dua for breaking the fast")}</div>
+            <div dir="rtl" className="quran mt-[0.4rem] text-[2.4rem] leading-[1.7]">{IFTAR_DUA.ar}</div>
+            <div className="text-[1.2rem] text-white/75">{t(IFTAR_DUA.en)}</div>
+          </div>
+        )}
 
         {playing && (
           <div className="mt-[2.5rem] flex h-[2.2rem] items-end gap-[0.3rem]">

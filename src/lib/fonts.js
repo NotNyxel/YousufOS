@@ -26,7 +26,7 @@ export const UI_FONTS = {
 };
 
 export const ARABIC_FONTS = {
-  amiri: { label: "Amiri", stack: '"Amiri"', quran: '"Amiri Quran", "Amiri"' },
+  amiri: { label: "Amiri", stack: '"Amiri"', quran: '"Amiri"' },
   scheherazade: { label: "Scheherazade", stack: '"Scheherazade New"', quran: '"Scheherazade New"' },
   naskh: { label: "Noto Naskh", stack: '"Noto Naskh Arabic Variable"', quran: '"Noto Naskh Arabic Variable"' },
   kufi: { label: "Noto Kufi", stack: KUFI, quran: KUFI },

@@ -22,7 +22,7 @@ export default function ReminderBanner({ reminder, volume, onDone }) {
   useEffect(() => {
     let audio;
     let url;
-    let timer = setTimeout(() => doneRef.current(), takbir ? 20000 : 11000);
+    let timer = setTimeout(() => doneRef.current(), reminder.duration || (takbir ? 20000 : 11000));
     if (takbir && reminder.sound) {
       takbirUrl().then((u) => {
         url = u;
@@ -43,7 +43,7 @@ export default function ReminderBanner({ reminder, volume, onDone }) {
       audio?.pause();
       if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
     };
-  }, [takbir, reminder.sound, volume]);
+  }, [takbir, reminder.sound, reminder.duration, volume]);
 
   return (
     <div
@@ -53,6 +53,7 @@ export default function ReminderBanner({ reminder, volume, onDone }) {
       <div className="breathe h-[0.7rem] w-[0.7rem] shrink-0 rounded-full bg-accent" />
       <div className="min-w-0">
         {takbir && <div className="text-[0.85rem] font-bold uppercase tracking-[0.18em] text-accent">{t("Takbir")} · {t(reminder.eid)}</div>}
+        {reminder.title && <div className="mb-[0.6rem] text-[0.85rem] font-bold uppercase tracking-[0.18em] text-accent">{reminder.title}</div>}
         <div className={`quran leading-[1.6] text-ink ${takbir ? "text-[2.2rem]" : "text-[2.4rem]"}`}>{reminder.ar}</div>
         <div className="text-[1.05rem] text-ink-dim">{t(reminder.en)}</div>
       </div>

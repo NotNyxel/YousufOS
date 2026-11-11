@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Gamepad2, House, LayoutGrid, Newspaper, Search, Settings, Tv } from "lucide-react";
+import { BookOpenText, Cctv, Gamepad2, House, LayoutGrid, Lock, MoonStar, Newspaper, Search, Settings, Tv } from "lucide-react";
 import { LogoMark, MosqueIcon } from "./icons";
 import { useI18n } from "../lib/settings-store";
 
@@ -10,6 +10,8 @@ const MAIN = [
   { id: "apps", label: "Apps", Icon: LayoutGrid },
   { id: "games", label: "Games", Icon: Gamepad2 },
   { id: "prayer", label: "Prayer", Icon: MosqueIcon },
+  { id: "quran", label: "Qur'an", Icon: BookOpenText },
+  { id: "cameras", label: "Cameras", Icon: Cctv },
   { id: "news", label: "News", Icon: Newspaper },
 ];
 // Future: Media (Jellyfin), Smart Home (Home Assistant), Cameras.
@@ -35,7 +37,7 @@ function Item({ id, label, Icon, active, onPreview, onChoose }) {
 }
 
 // Collapsed icon rail that expands while it has focus (Google TV style).
-function Sidebar({ page, onPreview, onChoose, now, nextPrayer, clock }) {
+function Sidebar({ page, onPreview, onChoose, now, nextPrayer, clock, kids, onExitKids, sleepLabel, onSleep }) {
   const { t } = useI18n();
   return (
     <nav
@@ -59,14 +61,19 @@ function Sidebar({ page, onPreview, onChoose, now, nextPrayer, clock }) {
       </div>
 
       <div className="relative my-auto flex flex-col gap-[0.45rem]">
-        {MAIN.map((p) => (
+        {MAIN.filter((p) => !kids || kids.includes(p.id)).map((p) => (
           <Item key={p.id} {...p} label={t(p.label)} active={page === p.id} onPreview={onPreview} onChoose={onChoose} />
         ))}
       </div>
 
       <div className="relative flex flex-col gap-[0.6rem]">
         <div className="side-label mx-[0.9rem] h-px bg-line" />
-        <Item id="settings" label={t("Settings")} Icon={Settings} active={page === "settings"} onPreview={onPreview} onChoose={onChoose} />
+        <Item id="sleep" label={sleepLabel ? `${t("Sleep timer")} · ${sleepLabel}` : t("Sleep timer")} Icon={MoonStar} active={!!sleepLabel} onPreview={() => {}} onChoose={onSleep} />
+        {kids ? (
+          <Item id="exitkids" label={t("Leave Kids profile")} Icon={Lock} active={false} onPreview={() => {}} onChoose={onExitKids} />
+        ) : (
+          <Item id="settings" label={t("Settings")} Icon={Settings} active={page === "settings"} onPreview={onPreview} onChoose={onChoose} />
+        )}
         {nextPrayer && (
           <div className="side-label ps-[1.1rem] pt-[0.4rem]">
             <div className="whitespace-nowrap text-[0.85rem] font-semibold uppercase tracking-[0.14em] text-ink-faint">{t("Next prayer")}</div>

@@ -23,6 +23,19 @@ Built with **React + Tailwind** (UI) and **Tauri / Rust** (native layer).
 | ![Settings](docs/screenshots/settings.jpg) | ![Games](docs/screenshots/games.jpg) |
 | **Settings.** 14 themes, fonts, card glass and blur, 22 languages, and prayer calculation methods. | **Games.** Snake, Blocks, 2048, Memory Match and Tic-Tac-Toe, played with the remote. |
 
+### New in 1.8
+
+| | |
+|---|---|
+| ![The Qur'an](docs/screenshots/quran.jpg) | ![Reading with recitation](docs/screenshots/quran-reader.jpg) |
+| **Qur'an** in the sidebar: surahs, juz, bookmarks and downloads. | **Reading and listening:** the verse being recited is highlighted, with a translation under each verse. |
+| ![Mushaf pages](docs/screenshots/quran-mushaf.jpg) | ![Ramadan on Home](docs/screenshots/ramadan-home.jpg) |
+| **Mushaf view:** page by page like the printed Madinah mushaf. | **Ramadan mode:** iftar and suhoor countdowns on Home. |
+| ![Ramadan trackers](docs/screenshots/ramadan-prayer.jpg) | ![Kids profile bedtime](docs/screenshots/kids-bedtime.jpg) |
+| **Taraweeh and khatm trackers** on the Prayer page. | **Kids profile:** a daily limit and a bedtime, with a parent PIN. |
+
+![Phone panel: sleep timer and Kids profile, cameras, and the server monitor](docs/screenshots/phone-server.jpg)
+
 **Phone & Remote.** Control the TV from any phone, tablet or computer on the same Wi-Fi: pair with a PIN, then use the remote, send links and photos, see what's on, and check the system. It installs to the home screen like an app, on iPhone too.
 
 ![The phone panel: pairing, remote, watch and system screens](docs/screenshots/phone.jpg)
@@ -41,6 +54,9 @@ Built with **React + Tailwind** (UI) and **Tauri / Rust** (native layer).
 | **Sidebar** | Collapsed icon rail that expands on focus: Home, Live TV, Apps, Games, Prayer, News, Settings. Up/Down stay in the rail, Right/OK opens the page |
 | **Apps** | 30 apps with their real logos. **Free to watch:** YouTube (TV interface), tabii (TRT), Dubai+ (Awaan), Al Jazeera 360, Weyyak, Plex Free Movies, Viki, NASA+, Red Bull TV, TED, Classic Films (Internet Archive). Also Netflix, Prime Video, Shahid, Disney+, OSN+, STARZPLAY, Apple TV, TOD, Twitch, Crunchyroll, YouTube Kids, Spotify, Anghami, YouTube Music, Quran.com, Plex, Jellyfin, Google Photos, Home Assistant. Apps open **inside YousufOS** (no extra windows, cookie pop-ups accepted automatically, links stay on screen); services with protected video open in a full-screen Chrome window |
 | **Prayer** | Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha with the current prayer highlighted and a countdown to the next. Countdowns to Ramadan, Eid al-Fitr, Arafah, Eid al-Adha, Islamic New Year and Ashura |
+| **Qur'an** | The whole Qur'an (Uthmani text built in) by surah, juz or mushaf page, translations and tafsir, verse-by-verse recitation from 16 reciters with highlighting, bookmarks, downloads for offline. Ramadan mode with suhoor / iftar countdowns, alarms, Taraweeh and khatm trackers |
+| **Cameras** | Live pictures from RTSP / HLS / Home Assistant cameras, full-screen viewing, doorbell pop-up with chime and phone message |
+| **Family** | Kids profile (allowed apps and channels, daily limit, bedtime, parent PIN) and a sleep timer |
 | **Adhan** | Fullscreen notice at each prayer time, plays the Adhan (Makkah, Madinah, Sheikh Zayed Mosque*, Dubai, Mishary Alafasy or custom; Mishary's Fajr adhan for Fajr), pauses other media, brings the launcher to the front and returns to Home when it finishes |
 | **News** | Al Jazeera (breaking), Sky News Arabia (regional), Al Ittihad / Abu Dhabi Media (UAE). Ticker on Home, full headline lists on the News page, refreshed every 10 minutes |
 | **Hadith** | 30 short authentic hadith, offline, Arabic + English + source; changes daily |
@@ -243,6 +259,28 @@ To publish a version: change `version` in `package.json`, `src-tauri/tauri.conf.
 
 ### Backups (1.7)
 Settings → System → *Save a backup* writes everything (apps, channels, playlists, location, prayer settings, sign-ins) to a USB drive if one is plugged in, otherwise `~/YousufOS-Backups`. *Restore a backup* lists them. From the phone: Settings → *Download a backup* / *Restore from file*. Backups include sign-ins and tokens, so keep them private.
+
+### The Qur'an (1.8)
+**Qur'an** in the sidebar: all 114 surahs, the 30 juz and your bookmarks. Read a surah verse by verse with a translation (Sahih International is built in), or switch to **Mushaf** to read page by page like the printed Madinah mushaf (← → turn pages). OK on a verse: play from there, play it alone, repeat it 3 times, bookmark it, or read its tafsir. The verse being recited is highlighted and the page follows it; recitation keeps playing on other pages (a small chip at the top) and pauses for the Adhan, Live TV and films.
+
+**Downloads** tab: 16 reciters (Alafasy, Sudais, Shuraim, Maher Al-Muaiqly, Husary, Abdul Basit and more, plus English and Urdu translation recitations) to download whole or surah by surah (*Download surah* in the reader) for listening offline, plus 118 translations in 48 languages and 6 tafsir (al-Muyassar, al-Jalalayn, al-Qurtubi, al-Baghawi, al-Waseet, Tanwir al-Miqbas). The Arabic text (Tanzil Uthmani) is built in, so reading works without internet. Files live in `~/.local/share/com.nyxel.yousufos/quran`.
+
+### Ramadan mode (1.8)
+Turns on by itself when Ramadan begins (Settings → Prayer & Adhan → *Ramadan mode*: Automatic / On / Off; *On* lets you try it any time). Home shows the day of Ramadan with a countdown to iftar or the end of suhoor; a suhoor alarm sounds before Fajr (15–90 minutes, also on your phones); the Maghrib Adhan screen shows the dua for breaking the fast; on the odd nights of the last ten a Laylat al-Qadr reminder appears after Isha. The Prayer page gets a Taraweeh tracker (30 nights) and a Qur'an khatm tracker (a juz a day, with *Read juz N* opening the Qur'an there).
+
+### Kids profile (1.8)
+Settings → **Kids profile**: set a 4-digit parent PIN, choose the apps the kids may open, Live TV (children's channels and the Makkah / Madinah channels only), games, the Qur'an and optionally a child's Jellyfin account, a daily limit (30 min – 4 h) and a bedtime. In the Kids profile the sidebar is simpler, Settings and Search are hidden, and when time is up (or at bedtime) everything stops and a friendly screen appears; a parent can add 30 minutes or leave the profile with the PIN. The phone panel can switch it on and off and add time too.
+
+### Sleep timer (1.8)
+**Sleep timer** at the bottom of the sidebar (or the phone's Remote tab): in 15 – 120 minutes or at the end of what's playing (the film / episode, or the recitation). Then: stop and turn the screen off (any key wakes it), put the laptop to sleep, or just stop playing. A minute before, a message offers 15 more minutes.
+
+### Cameras and the doorbell (1.8)
+Settings → **Cameras**: add any camera with a stream address (RTSP, HLS, MJPEG or a picture link; often in the camera's app under ONVIF / RTSP / NVR) or a Home Assistant camera (paste a long-lived access token once). The **Cameras** page shows live pictures; OK watches one full screen.
+
+When the doorbell rings, its camera pops up in a small window in the corner with a chime, a message on the TV and on your phones. A ring can come from Home Assistant (choose the doorbell's ring entity, e.g. `binary_sensor.doorbell_ring` or an `event.` entity) or from anything on your network calling `http://<TV>:8686/api/doorbell?key=<key>` (the address with its key is shown in Settings; the admin panel must be on). Doorbells that only work with their own app and cloud (no RTSP/ONVIF and no Home Assistant integration) can't be shown.
+
+### Server monitor (1.8)
+The phone panel's **Server** tab (paired devices only): processor (each core), memory, storage, network speed, temperatures, the busiest programs, Docker containers (start / stop / restart), services (ssh, docker, tailscaled, jellyfin…) and Tailscale with its devices. Docker needs your user in the `docker` group (`sudo usermod -aG docker $USER`, then log out and in).
 
 ### Languages
 Translations live in `src/i18n/locales/<code>.json` (English text → translation). Arabic is complete. The other languages cover the main screens; anything missing falls back to English.

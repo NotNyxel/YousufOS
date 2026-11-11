@@ -3,10 +3,11 @@ import { Moon, Sun, Sunrise, Sunset, CloudSun, MoonStar, CalendarDays, MapPin, C
 import { METHODS, formatCountdown, formatTime } from "../lib/prayer";
 import { formatHijri, toHijri, upcomingEvents, HIJRI_MONTHS_AR } from "../lib/hijri";
 import { useI18n } from "../lib/settings-store";
+import RamadanTrackers from "../components/RamadanTrackers";
 
 const ICONS = { fajr: MoonStar, sunrise: Sunrise, dhuhr: Sun, asr: CloudSun, maghrib: Sunset, isha: Moon };
 
-function Prayer({ now, settings, schedule, go }) {
+function Prayer({ now, settings, schedule, go, ramadan, update, onReadJuz }) {
   const { t, lang, locale, dir } = useI18n();
   const { list, current, next } = schedule;
   const hijri = toHijri(now, settings.prayer.hijriOffset);
@@ -93,6 +94,7 @@ function Prayer({ now, settings, schedule, go }) {
       <p className="mt-[1.2rem] text-[0.95rem] text-ink-faint">
         {t("Dates follow the Umm al-Qura calendar and may shift by a day with local moon sighting. Adjust in Settings → Prayer.")}
       </p>
+      {ramadan && <RamadanTrackers info={ramadan} settings={settings} update={update} onReadJuz={onReadJuz} />}
     </div>
   );
 }

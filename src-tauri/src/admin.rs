@@ -211,6 +211,15 @@ fn handle(app: AppHandle, mut req: tiny_http::Request) {
         return json_reply(req, 200, json!({ "token": token }));
     }
 
+    // Doorbell: a ring from Home Assistant, a script or any device on the
+    // network (the launcher checks the key). No pairing needed.
+    if path == "/api/doorbell" {
+        let key = query_value(query, "key").or_else(|| args["key"].as_str().map(String::from)).unwrap_or_default();
+        let camera = query_value(query, "camera").or_else(|| args["camera"].as_str().map(String::from));
+        let _ = app.emit("doorbell-ring", json!({ "key": key, "camera": camera }));
+        return json_reply(req, 200, json!({ "ok": true }));
+    }
+
     let token = header(&req, "X-Token").unwrap_or_default();
     let authorised = !token.is_empty() && config().lock().unwrap().tokens.iter().any(|t| t == &token);
     if !authorised {
@@ -248,6 +257,15 @@ fn handle(app: AppHandle, mut req: tiny_http::Request) {
             }
         }
         ("GET", "/api/log") => Ok(json!({ "lines": crate::log_lines() })),
+        ("GET", "/api/monitor") => Ok(crate::monitor::snapshot()),
+        ("POST", "/api/docker") => crate::monitor::docker_action(args["name"].as_str().unwrap_or(""), args["action"].as_str().unwrap_or("")),
+        ("GET", "/api/snapshot") => {
+            let id = query_value(query, "id").unwrap_or_default();
+            return match std::fs::read(crate::cameras::snapshot_path(&id)) {
+                Ok(bytes) => respond(req, 200, "image/jpeg", bytes),
+                Err(_) => respond(req, 404, "text/plain", b"No picture yet".to_vec()),
+            };
+        }
         ("POST", "/api/call") => {
             let action = args["action"].as_str().unwrap_or("").to_string();
             Ok(ask_launcher_as(&app, &action, args["args"].clone(), &device_id(&token)))

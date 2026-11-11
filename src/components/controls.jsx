@@ -96,7 +96,7 @@ export function SliderRow({ label, hint, value, min, max, step = 1, format = (v)
 }
 
 // Press once to arm, again to confirm (for power actions).
-export function ActionRow({ label, hint, onAction, confirm = false, Icon, danger = false }) {
+export function ActionRow({ label, hint, onAction, confirm = false, Icon, danger = false, isDefault }) {
   const { t } = useI18n();
   const [armed, setArmed] = useState(false);
   useEffect(() => {
@@ -107,6 +107,7 @@ export function ActionRow({ label, hint, onAction, confirm = false, Icon, danger
   return (
     <Row
       label={label}
+      isDefault={isDefault}
       hint={armed ? t("Press OK again to confirm") : hint}
       onClick={() => {
         if (confirm && !armed) return setArmed(true);

@@ -7,9 +7,10 @@ import QuranCard from "../components/QuranCard";
 import FocusApps from "../components/FocusApps";
 import Weather from "../components/Weather";
 import JellyfinHomeRow from "../jellyfin/HomeRow";
+import RamadanCard from "../components/RamadanCard";
 import { useI18n } from "../lib/settings-store";
 
-function Home({ now, settings, schedule, apps, wallpaper, onLaunch, go, eid, onJellyfin }) {
+function Home({ now, settings, schedule, apps, wallpaper, onLaunch, go, eid, onJellyfin, ramadan }) {
   const { t } = useI18n();
   // Three switches in Settings → Home Screen (older configs used homeLayout).
   const showApps = settings.showApps ?? settings.homeLayout !== "quran";
@@ -21,6 +22,7 @@ function Home({ now, settings, schedule, apps, wallpaper, onLaunch, go, eid, onJ
   // The Jellyfin row needs room, so the clock gets smaller while it's showing.
   const [jfRow, setJfRow] = useState(false);
   const row = jfRow && !!onJellyfin;
+  const compact = row;
   return (
     <div className="relative flex h-full flex-col">
       <header className="flex items-start justify-between ps-[9rem] pe-[3.5rem] pt-[2.6rem]">
@@ -39,11 +41,19 @@ function Home({ now, settings, schedule, apps, wallpaper, onLaunch, go, eid, onJ
             </div>
           )}
         </div>
-        <PrayerWidget schedule={schedule} now={now} clock24={settings.clock24} onOpen={() => go("prayer")} />
+        {/* The Ramadan card hangs below the prayer widget without pushing the clock down. */}
+        <div className="relative">
+          <PrayerWidget schedule={schedule} now={now} clock24={settings.clock24} onOpen={() => go("prayer")} />
+          {ramadan && (
+            <div className="absolute end-0 top-full z-10">
+              <RamadanCard info={ramadan} now={now} clock24={settings.clock24} onOpen={() => go("prayer")} />
+            </div>
+          )}
+        </div>
       </header>
 
-      <div className={`flex min-h-0 flex-1 flex-col items-center justify-center ps-[6.5rem] ${row ? "gap-[0.5rem] pb-0" : "gap-[0.9rem] pb-[2rem]"}`}>
-        <HeroClock now={now} settings={settings} size={row ? "lg" : "xl"} />
+      <div className={`flex min-h-0 flex-1 flex-col items-center justify-center ps-[6.5rem] ${compact ? "gap-[0.5rem] pb-0" : "gap-[0.9rem] pb-[2rem]"}`}>
+        <HeroClock now={now} settings={settings} size={compact ? "lg" : "xl"} />
         {settings.showWeather !== false && <Weather lat={settings.location.lat} lng={settings.location.lng} />}
       </div>
 

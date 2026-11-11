@@ -414,7 +414,7 @@ fn pip() -> &'static Mutex<Option<Child>> {
 /// Live TV in a small window that stays on top of everything.
 /// corner: "br" | "bl" | "tr" | "tl"; size: width in pixels.
 #[tauri::command]
-pub fn pip_start(url: String, title: String, corner: String, size: u32, muted: bool, user_agent: Option<String>) -> Result<(), String> {
+pub fn pip_start(url: String, title: String, corner: String, size: u32, muted: bool, user_agent: Option<String>, headers: Option<Vec<String>>) -> Result<(), String> {
     pip_stop();
     let w = size.clamp(320, 1280);
     let h = w * 9 / 16;
@@ -449,6 +449,12 @@ pub fn pip_start(url: String, title: String, corner: String, size: u32, muted: b
     }
     if let Some(ua) = user_agent.filter(|u| !u.is_empty()) {
         cmd.arg(format!("--user-agent={ua}"));
+    }
+    for h in headers.unwrap_or_default() {
+        cmd.arg(format!("--http-header-fields-append={h}"));
+    }
+    if url.trim().to_lowercase().starts_with("rtsp") {
+        cmd.arg("--rtsp-transport=tcp");
     }
     cmd.arg(url.trim()).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
     let child = cmd.spawn().map_err(|e| e.to_string())?;

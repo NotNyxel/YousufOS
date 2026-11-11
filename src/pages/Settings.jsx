@@ -1,7 +1,8 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Palette, MapPin, MonitorPlay, House, AppWindow, Tv, Pencil, BellRing, Languages, Music, Gamepad2, Image as ImageIcon, Newspaper, Cpu, Play, LocateFixed, Globe, RefreshCw, LogOut, Power, RotateCcw, Moon, Smartphone } from "lucide-react";
+import { Baby, Cctv, Palette, MapPin, MonitorPlay, House, AppWindow, Tv, Pencil, BellRing, Languages, Music, Gamepad2, Image as ImageIcon, Newspaper, Cpu, Play, LocateFixed, Globe, RefreshCw, LogOut, Power, RotateCcw, Moon, Smartphone } from "lucide-react";
 import { OptionRow, ToggleRow, SliderRow, ActionRow, SectionTitle } from "../components/controls";
 import { BackupRows, MorningRows, PhoneSection, PipRows, UpdatesRows } from "./SettingsExtra";
+import { CamerasSection, KidsSection, RamadanRows } from "./SettingsMore";
 import TextEntry from "../components/TextEntry";
 import CountryPicker from "../components/CountryPicker";
 import { MosqueIcon } from "../components/icons";
@@ -31,6 +32,8 @@ const SECTIONS = [
   { id: "screensaver", label: "Screensaver", Icon: MonitorPlay },
   { id: "backgrounds", label: "Backgrounds", Icon: ImageIcon },
   { id: "news", label: "News", Icon: Newspaper },
+  { id: "kids", label: "Kids profile", Icon: Baby },
+  { id: "cameras", label: "Cameras", Icon: Cctv },
   { id: "phone", label: "Phone & Remote", Icon: Smartphone },
   { id: "system", label: "System", Icon: Cpu },
 ];
@@ -266,6 +269,7 @@ function Settings({ settings, update, section, setSection, actions, customCount 
         <ToggleRow label="Pause other media during Adhan" hint="Pauses YouTube, Netflix etc. and brings YousufOS to the front" value={settings.adhan.muteMedia} onChange={(v) => update("adhan.muteMedia", v)} />
         <ToggleRow label="Special Fajr Adhan" hint="Mishary Alafasy, maqam Hijaz, with “prayer is better than sleep”" value={settings.adhan.useFajrFile} onChange={(v) => update("adhan.useFajrFile", v)} />
         <ActionRow label="Test Adhan" hint="Shows the fullscreen notification now" Icon={Play} onAction={actions.testAdhan} />
+        <RamadanRows settings={settings} update={update} actions={actions} />
       </>
     ),
     screensaver: (
@@ -370,6 +374,8 @@ function Settings({ settings, update, section, setSection, actions, customCount 
       </>
     ),
     phone: <PhoneSection settings={settings} update={update} setStatus={setStatus} />,
+    cameras: <CamerasSection settings={settings} update={update} actions={actions} />,
+    kids: <KidsSection settings={settings} update={update} setStatus={setStatus} actions={actions} />,
     system: (
       <>
         <SectionTitle>Startup</SectionTitle>
@@ -409,8 +415,8 @@ function Settings({ settings, update, section, setSection, actions, customCount 
   return (
     <div className="flex h-full gap-[2.5rem] pb-[3rem] ps-[9rem] pe-[4rem] pt-[4rem]">
       <div className="w-[20rem] shrink-0">
-        <h1 className="mb-[2rem] text-[2.6rem] font-bold tracking-tight">{t("Settings")}</h1>
-        <div className="space-y-[0.4rem]" data-nav-trap="y">
+        <h1 className="mb-[1.2rem] text-[2.6rem] font-bold tracking-tight">{t("Settings")}</h1>
+        <div className="space-y-[0.2rem]" data-nav-trap="y">
           {SECTIONS.map(({ id, label, Icon }) => (
             <button
               key={id}
@@ -422,7 +428,7 @@ function Settings({ settings, update, section, setSection, actions, customCount 
                 clearTimeout(sectionTimer.current);
                 sectionTimer.current = setTimeout(() => setSection(id), 160);
               }}
-              className={`focus-row flex w-full items-center gap-[1rem] rounded-[1rem] px-[1.2rem] py-[0.95rem] text-left text-[1.2rem] font-semibold ${
+              className={`focus-row flex w-full items-center gap-[1rem] rounded-[1rem] px-[1.2rem] py-[0.62rem] text-left text-[1.15rem] font-semibold ${
                 section === id ? "bg-ink/10 text-ink" : "text-ink-dim"
               }`}
             >

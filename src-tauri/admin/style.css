@@ -87,3 +87,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .chip { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--panel2); font-size: 12px; color: var(--dim); font-weight: 600; }
 .chip.live { background: rgb(255 80 80 / 0.16); color: #ff8b80; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* 1.8: cameras, server monitor */
+.cams { display: grid; gap: 10px; }
+img.cam { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; background: #0b0c10; }
+.cores { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 14px; }
+.core { display: grid; grid-template-columns: 22px 1fr 40px; align-items: center; gap: 8px; }
+.core .bar { margin-top: 0; }
+.pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; margin-left: 6px; text-transform: capitalize; }
+.pill.ok { background: rgb(52 199 89 / 0.18); color: #5fd38a; }
+.pill.bad { background: rgb(255 69 58 / 0.18); color: #ff7a70; }
+.hot { color: #ff7a70; }
+.stat .v { overflow-wrap: anywhere; }
