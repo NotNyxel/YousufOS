@@ -400,7 +400,7 @@ function Settings({ settings, update, section, setSection, actions, customCount 
         <ActionRow label="Restart computer" Icon={RotateCcw} confirm danger onAction={() => system("reboot")} />
         <ActionRow label="Shut down" Icon={Power} confirm danger onAction={() => system("poweroff")} />
         <div className="px-[1.5rem] pt-[1.2rem] text-[1rem] text-ink-faint">
-          YousufOS 1.7 · {isTauri() ? t("Desktop runtime") : t("Browser preview")}
+          YousufOS {__APP_VERSION__} · {isTauri() ? t("Desktop runtime") : t("Browser preview")}
         </div>
       </>
     ),

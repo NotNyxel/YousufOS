@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import HeroClock from "../components/HeroClock";
 import PrayerWidget from "../components/PrayerWidget";
 import AppTile from "../components/AppTile";
@@ -18,6 +18,9 @@ function Home({ now, settings, schedule, apps, wallpaper, onLaunch, go, eid, onJ
   const quranOnly = !showApps && showQuran;
   const hadithOnly = !showApps && !showQuran;
   const pinned = apps.filter((a) => a.pinned).slice(0, 6);
+  // The Jellyfin row needs room, so the clock gets smaller while it's showing.
+  const [jfRow, setJfRow] = useState(false);
+  const row = jfRow && !!onJellyfin;
   return (
     <div className="relative flex h-full flex-col">
       <header className="flex items-start justify-between ps-[9rem] pe-[3.5rem] pt-[2.6rem]">
@@ -39,12 +42,12 @@ function Home({ now, settings, schedule, apps, wallpaper, onLaunch, go, eid, onJ
         <PrayerWidget schedule={schedule} now={now} clock24={settings.clock24} onOpen={() => go("prayer")} />
       </header>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-[0.9rem] pb-[2rem] ps-[6.5rem]">
-        <HeroClock now={now} settings={settings} />
+      <div className={`flex min-h-0 flex-1 flex-col items-center justify-center ps-[6.5rem] ${row ? "gap-[0.5rem] pb-0" : "gap-[0.9rem] pb-[2rem]"}`}>
+        <HeroClock now={now} settings={settings} size={row ? "lg" : "xl"} />
         {settings.showWeather !== false && <Weather lat={settings.location.lat} lng={settings.location.lng} />}
       </div>
 
-      {onJellyfin && <JellyfinHomeRow settings={settings} onOpen={onJellyfin} />}
+      {onJellyfin && <JellyfinHomeRow settings={settings} onOpen={onJellyfin} onShown={setJfRow} />}
 
       {hadithOnly ? (
         <div className="flex justify-end pb-[4.2rem] ps-[9rem] pe-[3.5rem]">{settings.showHadith && <HadithCard now={now} compact />}</div>

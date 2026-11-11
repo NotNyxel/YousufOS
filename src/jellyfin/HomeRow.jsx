@@ -6,7 +6,7 @@ import { useI18n } from "../lib/settings-store";
 import { createClient, episodeCode, normalizeServer, progressOf } from "./api";
 import { Art } from "./ui";
 
-function JellyfinHomeRow({ settings, onOpen }) {
+function JellyfinHomeRow({ settings, onOpen, onShown }) {
   const { t } = useI18n();
   const server = normalizeServer(settings.appUrls?.jellyfin || "http://localhost:8096");
   const auth = settings.jellyfin?.auth;
@@ -34,7 +34,11 @@ function JellyfinHomeRow({ settings, onOpen }) {
       offs.forEach((p) => p.then((f) => f()));
     };
   }, [client]);
-  if (!client || !items.length) return null;
+  const shown = !!client && items.length > 0;
+  useEffect(() => {
+    onShown?.(shown);
+  }, [shown, onShown]);
+  if (!shown) return null;
   return (
     <section className="fade-up ps-[9rem] pe-[3.5rem] pb-[0.6rem]">
       <div className="mb-[0.6rem] text-[1.05rem] font-semibold text-ink-dim">{t("Continue watching · Jellyfin")}</div>

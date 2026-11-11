@@ -6,6 +6,27 @@ Ubuntu, Docker, SSH, Tailscale, Jellyfin and Home Assistant keep running underne
 
 Built with **React + Tailwind** (UI) and **Tauri / Rust** (native layer).
 
+![YousufOS Home: clock, Hijri date, next prayer, Jellyfin Continue Watching, Ayah of the day and today's hadith](docs/screenshots/home.jpg)
+
+**Download:** the latest `.deb` is on the [Releases](../../releases/latest) page. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
+
+## A quick look
+
+| | |
+|---|---|
+| ![Prayer times](docs/screenshots/prayer.jpg) | ![Live TV](docs/screenshots/live-tv.jpg) |
+| **Prayer.** Today's five prayers with the next one highlighted, and countdowns to Ramadan, Eid and Arafah. | **Live TV.** Official channels straight from the broadcasters, plus free lists by country and category. |
+| ![Apps](docs/screenshots/apps.jpg) | ![Search](docs/screenshots/search.jpg) |
+| **Apps.** 30 apps that open inside YousufOS and work with a remote or an Xbox controller. | **Search.** One search across apps, YouTube, Jellyfin and Live TV, with an English and Arabic keyboard. |
+| ![Jellyfin](docs/screenshots/jellyfin.jpg) | ![A film in Jellyfin](docs/screenshots/jellyfin-movie.jpg) |
+| **Jellyfin,** rebuilt for the TV: Continue watching, libraries, and Movies, Shows and Music. *(Shown with a demo library.)* | **Film pages** with resume, audio and subtitles, downloads for offline viewing, and "More like this". |
+| ![Settings](docs/screenshots/settings.jpg) | ![Games](docs/screenshots/games.jpg) |
+| **Settings.** 14 themes, fonts, card glass and blur, 22 languages, and prayer calculation methods. | **Games.** Snake, Blocks, 2048, Memory Match and Tic-Tac-Toe, played with the remote. |
+
+**Phone & Remote.** Control the TV from any phone, tablet or computer on the same Wi-Fi: pair with a PIN, then use the remote, send links and photos, see what's on, and check the system. It installs to the home screen like an app, on iPhone too.
+
+![The phone panel: pairing, remote, watch and system screens](docs/screenshots/phone.jpg)
+
 ---
 
 ## What's in it
@@ -218,7 +239,7 @@ New versions come from GitHub releases. One-time setup:
 2. On GitHub: Settings → Developer settings → **Fine-grained tokens** → generate one with access to *only* this repository and **Contents: Read-only**.
 3. On the TV (easiest from the phone: Settings tab): set *GitHub repository* (`owner/name`) and paste the token.
 
-To publish a version: change `version` in `package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`, add a `## 1.7.1` section to `CHANGELOG.md` (it becomes the release notes), then `git tag v1.7.1 && git push origin v1.7.1`. GitHub Actions (`.github/workflows/release.yml`) builds the .deb and publishes it with a `SHA256SUMS` file. The TV checks once a day, says when there's an update, and installs it from Settings → System → Updates (or the phone) after checking the checksum; Ubuntu asks for your password to install. A .deb can also be uploaded from the phone (Settings → *Install a .deb file*).
+To publish a version: change `version` in `package.json`, `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`, add a `## 1.7.2` section to `CHANGELOG.md` (it becomes the release notes), then `git tag v1.7.2 && git push origin v1.7.2`. GitHub Actions (`.github/workflows/release.yml`) builds the .deb and publishes it with a `SHA256SUMS` file. The TV checks once a day, says when there's an update, and installs it from Settings → System → Updates (or the phone) after checking the checksum; Ubuntu asks for your password to install. A .deb can also be uploaded from the phone (Settings → *Install a .deb file*).
 
 ### Backups (1.7)
 Settings → System → *Save a backup* writes everything (apps, channels, playlists, location, prayer settings, sign-ins) to a USB drive if one is plugged in, otherwise `~/YousufOS-Backups`. *Restore a backup* lists them. From the phone: Settings → *Download a backup* / *Restore from file*. Backups include sign-ins and tokens, so keep them private.

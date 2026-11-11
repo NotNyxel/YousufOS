@@ -6,6 +6,13 @@ Every YousufOS release. Install a release on the TV laptop with
 
 The source code in this repository starts with 1.7.0. Earlier versions are available as installers on their releases.
 
+## 1.7.1 · 11 November 2026
+
+### Fixes
+- Home: with Jellyfin's Continue Watching row showing, the app card at the bottom was pushed off the screen. The clock now gets smaller while the row is there, so everything fits.
+- Phone panel: the pairing screen now points to Settings → Phone & Remote (it named a menu that doesn't exist).
+- The version shown in Settings and sent to Jellyfin now always matches the installed version.
+
 ## 1.7.0 · 11 November 2026
 
 The biggest update so far: YousufOS can now be controlled, updated and backed up from any device in the house.

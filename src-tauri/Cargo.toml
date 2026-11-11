@@ -1,6 +1,6 @@
 [package]
 name = "yousufos"
-version = "1.7.0"
+version = "1.7.1"
 description = "YousufOS - Islamic-focused Smart TV launcher for Linux"
 authors = ["Yousuf"]
 edition = "2021"

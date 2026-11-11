@@ -169,7 +169,7 @@
     return h("div", { class: "wrap center", style: "padding-top:12vh" },
       h("img", { src: "/icon.png", alt: "", width: "72", height: "72", style: "border-radius:18px" }),
       h("h1", { style: "margin-top:16px" }, "YousufOS"),
-      h("p", { class: "sub" }, "Enter the PIN shown on the TV under Settings → Admin panel."),
+      h("p", { class: "sub" }, "Enter the PIN shown on the TV under Settings → Phone & Remote."),
       h("div", { class: "pin" }, digits),
       h("div", { style: "max-width:340px;margin:0 auto" }, name),
       h("p", { class: "muted", style: "margin-top:28px" }, "Tip: Share → Add to Home Screen to open this like an app."),

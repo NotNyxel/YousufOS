@@ -6,7 +6,7 @@ import { invoke, isTauri } from "../lib/platform";
 import { relayUrl } from "../lib/iptv";
 
 export const TICKS = 10_000_000;
-const VERSION = "1.7.0";
+const VERSION = __APP_VERSION__;
 
 export function normalizeServer(raw) {
   let v = String(raw || "").trim().replace(/\/+$/, "");
