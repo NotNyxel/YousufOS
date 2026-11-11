@@ -61,7 +61,7 @@ DESKTOP
 say "Done"
 cat <<'MSG'
 Next steps:
-  1. Install YousufOS:   sudo apt install ./YousufOS_1.8.0_amd64.deb
+  1. Install YousufOS:   sudo apt install ./YousufOS_1.8.1_amd64.deb
      (or build it:       npm install && npm run bundle)
   2. Settings > Users > Automatic Login  -> ON   (boots straight to YousufOS)
   3. On the login screen, click the gear and pick "Ubuntu on Xorg"

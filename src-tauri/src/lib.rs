@@ -899,8 +899,10 @@ async fn update_check(repo: String, token: String) -> Result<serde_json::Value, 
         .map_err(|_| "Couldn't reach GitHub. Check the internet connection.".to_string())?;
     match res.status().as_u16() {
         200 => {}
-        401 | 403 => return Err("GitHub refused the token. Check it can read this repository.".into()),
-        404 => return Err("No release found (or the token can't see the repository).".into()),
+        401 => return Err("GitHub says the token is wrong or expired. Make a new one and save it again.".into()),
+        403 => return Err(format!("GitHub refused the token for {repo}. It needs Contents: Read-only on that repository.")),
+        404 if token.is_empty() => return Err(format!("{repo} is private: save a GitHub token to check for updates.")),
+        404 => return Err(format!("The token can't see {repo}. When making it, choose that repository under Repository access and give it Contents: Read-only.")),
         s => return Err(format!("GitHub answered {s}")),
     }
     let v: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;

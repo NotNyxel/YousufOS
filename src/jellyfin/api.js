@@ -9,7 +9,15 @@ export const TICKS = 10_000_000;
 const VERSION = __APP_VERSION__;
 
 export function normalizeServer(raw) {
-  let v = String(raw || "").trim().replace(/\/+$/, "");
+  // An address copied from the browser ("…:8096/web/#/home", "…/web/index.html")
+  // points at the web app, not the server: keep only the server part. A base
+  // path such as "/jellyfin" (reverse proxy) stays.
+  let v = String(raw || "")
+    .trim()
+    .replace(/[#?].*$/, "")
+    .replace(/\/web(\/.*)?$/i, "")
+    .replace(/\/index\.html$/i, "")
+    .replace(/\/+$/, "");
   if (!v) return "";
   if (!/^https?:\/\//i.test(v)) v = "http://" + v;
   if (!/^https?:\/\/[^/]+:\d+/i.test(v) && /^http:/i.test(v)) v = v.replace(/^(http:\/\/[^/]+)/i, "$1:8096");
@@ -93,10 +101,16 @@ export function createClient(server, auth = {}) {
   return {
     base,
     authHeader,
-    publicInfo: () => request("GET", "/System/Info/Public", { timeout: 6000 }),
+    publicInfo: () =>
+      request("GET", "/System/Info/Public", { timeout: 6000 }).then((r) => {
+        // A web page instead of the server's answer: the address is wrong.
+        if (!r || typeof r !== "object" || !r.Id) throw new JellyfinError(404, "That address isn't a Jellyfin server");
+        return r;
+      }),
     publicUsers: () => get("/Users/Public"),
     quickConnectEnabled: () => get("/QuickConnect/Enabled"),
-    quickConnectStart: () => post("/QuickConnect/Initiate"),
+    // POST since Jellyfin 10.9; older servers only answer GET.
+    quickConnectStart: () => post("/QuickConnect/Initiate").catch((e) => (e.status === 405 || e.status === 404 ? get("/QuickConnect/Initiate") : Promise.reject(e))),
     quickConnectState: (secret) => get("/QuickConnect/Connect", { secret }),
     quickConnectFinish: (secret) => post("/Users/AuthenticateWithQuickConnect", { Secret: secret }),
     signIn: (username, password) => post("/Users/AuthenticateByName", { Username: username, Pw: password }),

@@ -98,7 +98,7 @@
 
   async function api(path, opts = {}) {
     const res = await fetch(path, {
-      method: opts.method || (opts.body !== undefined ? "POST" : "GET"),
+      method: opts.method || (opts.raw || opts.body !== undefined ? "POST" : "GET"),
       headers: { "Content-Type": opts.raw ? "application/octet-stream" : "application/json", "X-Token": token || "" },
       body: opts.raw ? opts.raw : opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     });

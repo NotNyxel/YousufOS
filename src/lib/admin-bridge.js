@@ -85,7 +85,7 @@ export function settingsSchema(s, t) {
       title: t("Updates"),
       items: [
         { key: "updates.auto", label: t("Check for updates every day"), type: "toggle", value: s.updates?.auto !== false },
-        { key: "updates.repo", label: t("GitHub repository"), hint: "owner/name", type: "text", value: s.updates?.repo || "" },
+        { key: "updates.repo", label: t("GitHub repository"), hint: "owner/name (empty: NotNyxel/YousufOS)", type: "text", value: s.updates?.repo || "" },
         { key: "updates.token", label: t("GitHub token (read-only)"), hint: s.updates?.token ? t("Saved. Type a new one to replace it.") : t("Needed for a private repository"), type: "text", value: "" },
       ],
     },

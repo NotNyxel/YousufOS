@@ -946,5 +946,7 @@
   "Saved. OK to replace it.": "محفوظ. اضغط OK لاستبداله.",
   "Home Assistant → your profile → Security → Long-lived access tokens": "Home Assistant ← ملفك الشخصي ← الأمان ← رموز الوصول طويلة الأمد",
   "The doorbell's button or ring entity, e.g. binary_sensor.doorbell_ring": "زر الجرس أو كيان الرنين، مثل binary_sensor.doorbell_ring",
-  "Server": "الخادم"
+  "Server": "الخادم",
+  "Saved ({tail})": "محفوظ ({tail})",
+  "That address isn't a Jellyfin server": "هذا العنوان ليس خادم Jellyfin"
 }

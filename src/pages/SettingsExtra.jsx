@@ -9,7 +9,7 @@ import { invoke, isTauri } from "../lib/platform";
 import { useI18n } from "../lib/settings-store";
 import { newTopic, notifyPhones } from "../lib/notify";
 import { makeBackup, backupName, readBackup } from "../lib/backup";
-import { checkUpdate, installUpdate, CURRENT } from "../lib/updates";
+import { checkUpdate, installUpdate, CURRENT, DEFAULT_REPO, repoName, cleanToken } from "../lib/updates";
 
 const newPin = () => {
   const a = new Uint32Array(1);
@@ -169,9 +169,9 @@ export function UpdatesRows({ settings, update, setStatus }) {
   const u = settings.updates || {};
   const [editing, setEditing] = useState(null);
   const [state, setState] = useState(null);
-  const check = async () => {
+  const check = async (cfg = u) => {
     setState({ busy: true });
-    const r = await checkUpdate(u);
+    const r = await checkUpdate(cfg);
     setState(r);
     update("updates.lastCheck", Date.now());
   };
@@ -197,10 +197,10 @@ export function UpdatesRows({ settings, update, setStatus }) {
   return (
     <>
       <SectionTitle>Updates</SectionTitle>
-      <ActionRow label={state?.available ? "Install the update" : "Check for updates"} hint={status} Icon={state?.available ? Download : RefreshCw} onAction={state?.available ? install : check} />
+      <ActionRow label={state?.available ? "Install the update" : "Check for updates"} hint={status} Icon={state?.available ? Download : RefreshCw} onAction={state?.available ? install : () => check()} />
       <ToggleRow label="Check every day" value={u.auto !== false} onChange={(v) => update("updates.auto", v)} />
-      <ActionRow label="GitHub repository" hint={u.repo || t("Not set (owner/name)")} Icon={Pencil} onAction={() => setEditing("repo")} />
-      <ActionRow label="GitHub token" hint={u.token ? t("Saved") : t("Needed for a private repository: a fine-grained token with read access to its contents")} Icon={KeyRound} onAction={() => setEditing("token")} />
+      <ActionRow label="GitHub repository" hint={repoName(u.repo) || DEFAULT_REPO} Icon={Pencil} onAction={() => setEditing("repo")} />
+      <ActionRow label="GitHub token" hint={u.token ? t("Saved ({tail})", { tail: "…" + cleanToken(u.token).slice(-4) }) : t("Needed for a private repository: a fine-grained token with read access to its contents")} Icon={KeyRound} onAction={() => setEditing("token")} />
       {editing && (
         <TextEntry
           layout="text"
@@ -211,9 +211,11 @@ export function UpdatesRows({ settings, update, setStatus }) {
           saveLabel={t("Save")}
           onClose={() => setEditing(null)}
           onSave={(v) => {
-            update(`updates.${editing}`, v.trim());
+            const val = editing === "repo" ? repoName(v) : cleanToken(v);
+            update(`updates.${editing}`, val);
             setEditing(null);
-            setState(null);
+            // Try it straight away so a wrong token or name shows up now.
+            check({ ...u, [editing]: val });
           }}
         />
       )}

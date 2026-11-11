@@ -6,6 +6,14 @@ Every YousufOS release. Install a release on the TV laptop with
 
 The source code in this repository starts with 1.7.0. Earlier versions are available as installers on their releases.
 
+## 1.8.1 · 11 November 2026
+
+Fixes.
+
+- **Phone remote:** sending a file to the TV (an update .deb, a photo or video, a backup) failed with an error about "GET". It works again.
+- **Jellyfin:** an address copied from the browser (for example `http://192.168.1.10:8096/web/#/home`) pointed YousufOS at the web app instead of the server, so signing in gave "HTTP 404" and Quick Connect showed as unavailable. YousufOS now keeps only the server part of the address, and says so if an address isn't a Jellyfin server. Quick Connect also works with Jellyfin servers older than 10.9.
+- **Updates:** the repository is now filled in for you (NotNyxel/YousufOS), so a token is all that's needed. Links like `https://github.com/owner/name` and tokens pasted with spaces or line breaks are cleaned up. Saving the repository or the token checks for updates straight away, and the errors say exactly what's wrong (wrong or expired token, missing Contents permission, private repository without a token).
+
 ## 1.8.0 · 11 November 2026
 
 The Ramadan-ready update.

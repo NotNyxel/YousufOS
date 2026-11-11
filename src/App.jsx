@@ -803,7 +803,7 @@ export default function App() {
   // ---- Daily update check -------------------------------------------------
   useEffect(() => {
     const u = settings.updates;
-    if (!isTauri() || !loaded || !u?.auto || !u.repo || Date.now() - (u.lastCheck || 0) < 20 * 3600000) return;
+    if (!isTauri() || !loaded || !u?.auto || Date.now() - (u.lastCheck || 0) < 20 * 3600000) return;
     update("updates.lastCheck", Date.now());
     checkUpdate(u).then((r) => {
       if (r.available && r.latest !== u.skip) setToast(t("YousufOS {version} is available: Settings → System → Updates", { version: r.latest }));
