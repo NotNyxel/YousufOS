@@ -54,9 +54,9 @@ jobs:
           # Package mirrors sometimes hang: short timeouts, retries, and only Ubuntu's own sources.
           sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/azure-cli.list
           # GitHub's runners use Azure's Ubuntu mirror, which sometimes stops answering:
-          # try HTTPS mirrors first, then the usual ones (apt moves down the list on failure).
+          # use HTTPS mirrors (apt moves down the list on failure).
           printf '%s\n' https://mirrors.edge.kernel.org/ubuntu/ https://mirror.us.leaseweb.net/ubuntu/ https://ftp.uni-stuttgart.de/ubuntu/ \
-            http://azure.archive.ubuntu.com/ubuntu/ http://archive.ubuntu.com/ubuntu/ | sudo tee /etc/apt/apt-mirrors.txt
+            https://mirror.pit.teraswitch.com/ubuntu/ | sudo tee /etc/apt/apt-mirrors.txt
           sudo sed -i -E 's#http://(azure\.)?archive\.ubuntu\.com/ubuntu/?#mirror+file:/etc/apt/apt-mirrors.txt#g; s#http://security\.ubuntu\.com/ubuntu/?#mirror+file:/etc/apt/apt-mirrors.txt#g' /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null || true
           grep -h URIs /etc/apt/sources.list.d/*.sources || true
           APT="-o Acquire::Retries=2 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15"
