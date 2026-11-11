@@ -6,6 +6,51 @@ Every YousufOS release. Install a release on the TV laptop with
 
 The source code in this repository starts with 1.7.0. Earlier versions are available as installers on their releases.
 
+## 1.7.0 · 11 November 2026
+
+The biggest update so far: YousufOS can now be controlled, updated and backed up from any device in the house.
+
+### Phone & Remote (admin panel)
+- A control panel for phones, tablets and computers on the same Wi-Fi at `http://<TV-IP>:8686`. Settings → Phone & Remote shows the address, a QR code and a 6-digit PIN.
+- Works as an installable app on iPhone, iPad and Android: Share → Add to Home Screen.
+- **Remote:** D-pad, OK, Back, Home, media keys and volume. Type into the TV from your phone keyboard.
+- **Watch:** open apps, change Live TV channels, start recordings, cast a YouTube link, video link or photo to the TV.
+- **Files:** recordings and Jellyfin downloads, with delete.
+- **Settings:** edit YousufOS settings, back up and restore.
+- **System:** CPU, memory, disk, temperature and uptime, the activity log, restart or shut down, check for updates.
+- Each device pairs once with the PIN. Paired devices can be removed on the TV. Wrong PINs are rate-limited.
+
+### Phone notifications
+- Prayer-time notifications on your phones through the free ntfy app (Android and iPhone).
+- Optional notification when a recording finishes, and a test button.
+
+### Search
+- A new Search page in the sidebar: one search across apps, YouTube, Jellyfin and Live TV channels.
+- English and Arabic on-screen keyboard, or type from your phone.
+
+### Live TV
+- Picture-in-picture: press X on a channel to keep it playing in a small window. Corner, size and mute are adjustable.
+- Record a channel now or schedule a recording. Files go to `~/Videos/YousufOS/Recordings`.
+
+### Jellyfin
+- Continue Watching row on Home.
+- Profiles: "Who's watching?" with several Jellyfin accounts.
+- Downloads: single episodes, films or whole seasons, which play offline when the server is off.
+- Wake-on-LAN: wakes the Jellyfin PC automatically when it's unreachable.
+- Watch together (Jellyfin SyncPlay): play, pause and seek stay in sync with other devices.
+
+### Morning screen
+- At a time and on days you choose: date, prayer times and weather, with an optional chime.
+
+### Updates and backups
+- Automatic updates from GitHub releases. The TV checks daily, verifies the download against SHA256SUMS and asks for the Ubuntu password before installing.
+- Backup and restore of all settings to the laptop or a USB stick, or from your phone.
+
+### Other
+- The admin panel, phone notifications, morning screen, Jellyfin Home row, profile picker, Wake-on-LAN and auto-updates can all be switched on or off.
+- 155 new Arabic translations.
+- New package dependencies: `ffmpeg` (recording) and `pkexec` (installing updates).
+
 ## 1.6.0 · 11 November 2026
 
 ### The YousufOS Jellyfin app

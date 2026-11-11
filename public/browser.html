@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YousufOS Browser</title>
+<style>
+  :root { color-scheme: dark; --gold: #e6c46e; --ink: #f6f4ef; --dim: rgba(246,244,239,.62); }
+  * { box-sizing: border-box; }
+  html { font-size: calc(100vw / 120); }
+  body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 50% 0%, #1b2a3a 0%, #0a0c11 60%); color: var(--ink);
+    font-family: "Manrope Variable", "Noto Kufi Arabic", system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; }
+  h1 { margin: 8rem 0 0; font-size: 3.2rem; font-weight: 700; letter-spacing: -0.02em; }
+  h1 span { color: var(--dim); font-weight: 300; }
+  .sub { color: var(--dim); font-size: 1.15rem; margin-top: .6rem; }
+  form { margin-top: 2.6rem; width: 52rem; max-width: 90vw; }
+  input { width: 100%; height: 4.4rem; border-radius: 999px; border: 2px solid rgba(255,255,255,.14); background: rgba(255,255,255,.07);
+    color: var(--ink); font-family: inherit; font-size: 1.5rem; font-weight: 500; padding: 0 2rem; outline: none; transition: border-color .12s, background .12s; }
+  input:focus { border-color: var(--gold); background: rgba(255,255,255,.12); }
+  .grid { display: grid; grid-template-columns: repeat(6, 9.5rem); gap: 1.6rem; margin-top: 3.4rem; }
+  a.tile { display: flex; flex-direction: column; align-items: center; gap: .8rem; text-decoration: none; color: var(--ink); outline: none; border-radius: 1.4rem; padding: 1rem .4rem;
+    transition: transform .14s cubic-bezier(.16,.9,.3,1), background .14s; }
+  a.tile:focus { background: rgba(255,255,255,.1); transform: scale(1.08); }
+  .badge { width: 5.2rem; height: 5.2rem; border-radius: 1.3rem; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; color: #fff; box-shadow: 0 .8rem 2rem rgba(0,0,0,.35); }
+  .name { font-size: 1rem; font-weight: 600; text-align: center; }
+  .hint { margin-top: auto; padding: 2rem; color: var(--dim); font-size: 1rem; text-align: center; }
+  [dir="rtl"] input { text-align: right; }
+</style>
+</head>
+<body>
+<h1>Yousuf<span>OS</span> <b data-t="Browser">Browser</b></h1>
+<div class="sub" data-t="Search the web or open a site">Search the web or open a site</div>
+<form id="f" autocomplete="off">
+  <input id="q" type="search" enterkeyhint="go" data-t-ph="Search or type a web address" placeholder="Search or type a web address">
+</form>
+<div class="grid" id="grid"></div>
+<div class="hint" data-t="hint">A on the search box: on-screen keyboard · Menu: back, forward, reload · B: back · Xbox: YousufOS</div>
+<script>
+  const SITES = [
+    ["Google", "https://www.google.com", "G", "#4285f4"],
+    ["Wikipedia", "https://www.wikipedia.org", "W", "#5c5c5c"],
+    ["Quran.com", "https://quran.com", "ق", "#2e3778"],
+    ["Sunnah.com", "https://sunnah.com", "س", "#2b6b4f"],
+    ["Google Maps", "https://www.google.com/maps", "M", "#34a853"],
+    ["UAE Weather", "https://www.ncm.gov.ae", "☀", "#d98a1c"],
+    ["Gulf News", "https://gulfnews.com", "GN", "#c8102e"],
+    ["Khaleej Times", "https://www.khaleejtimes.com", "KT", "#0d3b66"],
+    ["The National", "https://www.thenationalnews.com", "N", "#1d1d1d"],
+    ["Al Jazeera", "https://www.aljazeera.net", "ج", "#b8892a"],
+    ["Al Khaleej", "https://www.alkhaleej.ae", "خ", "#00539b"],
+    ["Al Bayan", "https://www.albayan.ae", "ب", "#8a1538"],
+  ];
+  const AR = {
+    "Browser": "المتصفح",
+    "Search the web or open a site": "ابحث في الإنترنت أو افتح موقعًا",
+    "Search or type a web address": "ابحث أو اكتب عنوان موقع",
+    "hint": "A على مربع البحث: لوحة المفاتيح · Menu: رجوع، تقدم، تحديث · B: رجوع · Xbox: YousufOS",
+    "UAE Weather": "طقس الإمارات", "Google Maps": "خرائط جوجل", "Gulf News": "جلف نيوز", "Khaleej Times": "خليج تايمز",
+    "The National": "ذا ناشيونال", "Al Jazeera": "الجزيرة", "Al Khaleej": "الخليج", "Al Bayan": "البيان", "Wikipedia": "ويكيبيديا", "Google": "جوجل",
+  };
+  let lang = new URLSearchParams(location.search).get("lang");
+  try { lang = lang || localStorage.getItem("yousufos.lang"); } catch {}
+  const ar = lang === "ar";
+  const tr = (s) => (ar && AR[s]) || s;
+  if (ar || lang === "ur" || lang === "fa") document.documentElement.dir = "rtl";
+  document.documentElement.lang = lang || "en";
+  for (const el of document.querySelectorAll("[data-t]")) {
+    const k = el.dataset.t;
+    if (ar && AR[k]) el.textContent = AR[k];
+  }
+  const q = document.getElementById("q");
+  if (ar) q.placeholder = AR["Search or type a web address"];
+
+  const grid = document.getElementById("grid");
+  for (const [name, url, letter, color] of SITES) {
+    const a = document.createElement("a");
+    a.className = "tile";
+    a.href = url;
+    const b = document.createElement("div");
+    b.className = "badge";
+    b.style.background = color;
+    b.textContent = letter;
+    const n = document.createElement("div");
+    n.className = "name";
+    n.textContent = tr(name);
+    a.append(b, n);
+    grid.append(a);
+  }
+
+  document.getElementById("f").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const v = q.value.trim();
+    if (!v) return;
+    const looksLikeUrl = /^(https?:\/\/)?[^\s/]+\.[a-z]{2,}(:\d+)?(\/\S*)?$/i.test(v) || /^https?:\/\//i.test(v) || /^\d{1,3}(\.\d{1,3}){3}(:\d+)?/.test(v);
+    location.href = looksLikeUrl ? (/^https?:\/\//i.test(v) ? v : "https://" + v) : "https://www.google.com/search?q=" + encodeURIComponent(v);
+  });
+
+  // Remote / controller navigation between the search box and the tiles.
+  const items = () => [q, ...grid.querySelectorAll("a")];
+  window.addEventListener("keydown", (e) => {
+    const dirs = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+    const d = dirs[e.key];
+    const cur = document.activeElement;
+    if (e.key === "Enter" && cur === q && !q.value.trim() && window.__yousuf) {
+      e.preventDefault();
+      window.__yousuf.keyboard();
+      return;
+    }
+    if (!d || e.defaultPrevented) return;
+    if (cur === q && d[0]) return; // let the cursor move inside the text
+    const list = items();
+    if (!list.includes(cur)) return q.focus();
+    const r = cur.getBoundingClientRect();
+    let best = null;
+    for (const el of list) {
+      if (el === cur) continue;
+      const o = el.getBoundingClientRect();
+      const dx = (o.left + o.width / 2) - (r.left + r.width / 2);
+      const dy = (o.top + o.height / 2) - (r.top + r.height / 2);
+      if (d[0] && Math.sign(dx) !== d[0]) continue;
+      if (d[1] && Math.sign(dy) !== d[1]) continue;
+      if (d[0] && Math.abs(dy) > r.height) continue;
+      const score = Math.abs(d[0] ? dx : dy) + Math.abs(d[0] ? dy : dx) * 3;
+      if (!best || score < best.score) best = { el, score };
+    }
+    if (best) {
+      e.preventDefault();
+      best.el.focus();
+    }
+  });
+  q.focus();
+  // The page loads hidden behind YousufOS's loading screen; focus the search
+  // box again once it is on screen.
+  window.addEventListener("focus", () => {
+    if (!document.activeElement || document.activeElement === document.body) q.focus();
+  });
+</script>
+</body>
+</html>

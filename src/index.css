@@ -1,0 +1,251 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--ui-font);
+  --font-arabic: var(--ui-font);
+  --font-quran: var(--quran-font);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--ink-dim);
+  --color-ink-faint: var(--ink-faint);
+  --color-panel: var(--panel);
+  --color-panel-strong: var(--panel-strong);
+  --color-line: var(--line);
+  --color-canvas: var(--canvas);
+}
+
+/* Theme tokens. Defaults = Dark theme; src/lib/themes.js overrides them at runtime. */
+:root {
+  --accent: #d9b45a;
+  --on-accent: #1a1405;
+  --canvas: #07080b;
+  --ink-rgb: 246 244 239;
+  --panel-rgb: 12 14 20;
+  --panel-alpha: 0.46;
+  --ink: rgb(var(--ink-rgb));
+  --ink-dim: rgb(var(--ink-rgb) / 0.72);
+  --ink-faint: rgb(var(--ink-rgb) / 0.45);
+  --panel: rgb(var(--panel-rgb) / var(--panel-alpha));
+  --panel-strong: rgb(var(--panel-rgb) / min(1, calc(var(--panel-alpha) + 0.32)));
+  --line: rgb(255 255 255 / 0.12);
+  --scrim-top: rgb(0 0 0 / 0.35);
+  --scrim-bottom: rgb(0 0 0 / 0.82);
+  --wall-dim: 0;
+  --wall-tint: none;
+  --wall-filter: none;
+  --blur: 28px;
+  --ui-scale: 1;
+  --ui-font: "Manrope Variable", "Noto Kufi Arabic Variable", system-ui, sans-serif;
+  --quran-font: "Amiri", serif;
+  --mushaf-font: "Amiri Quran", "Amiri", serif;
+  --hero-glow: rgb(0 0 0 / 0.38);
+  --hero-shadow: rgb(0 0 0 / 0.45);
+  color-scheme: dark;
+}
+
+/* 10-foot UI: 1rem = 16px on a 1920-wide screen, scales with the TV. */
+html {
+  font-size: calc(100vw / 120 * var(--ui-scale));
+}
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overflow: clip;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: none;
+}
+body.show-cursor,
+body.show-cursor #root {
+  cursor: default;
+}
+
+.glass {
+  background: var(--panel);
+  backdrop-filter: blur(var(--blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+  border: 1px solid var(--line);
+}
+.glass-strong {
+  background: var(--panel-strong);
+  backdrop-filter: blur(var(--blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+  border: 1px solid var(--line);
+}
+
+/* Visual effects levels (Settings -> Appearance -> Visual effects).
+   Default ("balanced"): blurred cards, still wallpapers.
+   fx-full: adds the slow Ken Burns drift and blurred page backdrops.
+   fx-performance: no blur at all (solid cards). */
+.kenburns { animation: none; }
+.fx-full .kenburns { animation: kenburns 60s ease-in-out infinite alternate; }
+
+/* Backdrop behind Apps / Prayer / News / Settings pages */
+.page-veil { background: color-mix(in srgb, var(--canvas) 80%, transparent); }
+.fx-full .page-veil {
+  background: color-mix(in srgb, var(--canvas) 62%, transparent);
+  backdrop-filter: blur(2.2rem);
+  -webkit-backdrop-filter: blur(2.2rem);
+}
+.blur-panel {
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+}
+
+.fx-performance .glass,
+.fx-performance .glass-strong,
+.fx-performance .blur-panel {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.fx-performance .glass { background: rgb(var(--panel-rgb) / min(1, calc(var(--panel-alpha) + 0.3))); }
+.fx-performance .glass-strong { background: rgb(var(--panel-rgb) / min(1, calc(var(--panel-alpha) + 0.45))); }
+.fx-performance .fade-up { animation-duration: 1ms; }
+
+/* Sidebar: the panel and labels fade in; nothing changes size while it animates. */
+.side-panel,
+.side-label {
+  opacity: 0;
+  transition: opacity 160ms ease-out, transform 200ms var(--snap);
+}
+.side-panel { transform: translateX(-1.2rem); }
+.side-label { transform: translateX(-0.5rem); }
+[dir="rtl"] .side-panel { transform: translateX(1.2rem); }
+[dir="rtl"] .side-label { transform: translateX(0.5rem); }
+nav[data-sidebar]:focus-within .side-panel,
+nav[data-sidebar]:focus-within .side-label {
+  opacity: 1;
+  transform: none;
+}
+
+/* Page shells never scroll sideways (only real lists scroll). */
+[data-main] {
+  overflow: hidden;
+  overflow: clip;
+}
+
+[data-nav] {
+  outline: none;
+}
+
+/* Responsiveness: focus animations start moving on the very next frame
+   (strong ease-out) and stay short, and only cheap properties animate
+   (shadows and rings snap in instead of being repainted every frame). */
+:root {
+  --snap: cubic-bezier(0.16, 0.9, 0.3, 1);
+}
+[data-nav] {
+  transition-property: transform, background-color, color, opacity, border-color !important;
+  transition-duration: 150ms !important;
+  transition-timing-function: var(--snap) !important;
+}
+
+/* Generic focus treatment for list rows and buttons */
+.focus-row {
+  transition: background-color 150ms var(--snap), transform 150ms var(--snap), color 150ms var(--snap);
+}
+.focus-row:focus {
+  background: var(--ink);
+  color: var(--canvas);
+  transform: scale(1.015);
+  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 0.35);
+}
+.focus-row:focus .dim-on-focus {
+  color: color-mix(in srgb, var(--canvas) 70%, transparent);
+}
+.focus-row:focus .accent-on-focus {
+  color: color-mix(in srgb, var(--accent) 60%, var(--canvas));
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.arabic {
+  font-family: var(--font-arabic);
+  direction: rtl;
+}
+.quran {
+  font-family: var(--font-quran);
+  direction: rtl;
+}
+
+/* Wallpaper motion */
+@keyframes kenburns {
+  from { transform: scale(1.04) translate3d(0, 0, 0); }
+  to { transform: scale(1.14) translate3d(-1.5%, -1%, 0); }
+}
+
+
+/* News ticker: Arabic flows right-to-left, so the strip travels rightwards */
+@keyframes ticker {
+  from { transform: translate3d(-50%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+.ticker-track {
+  animation: ticker var(--ticker-duration, 120s) linear infinite;
+  will-change: transform;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(1.25rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fade-up 300ms var(--snap) both;
+}
+/* Page switches: fade only (moving glass panels re-blurs them every frame). */
+.page-in {
+  animation: page-in 200ms ease-out both;
+}
+@keyframes page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+.breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kenburns, .breathe { animation: none; }
+}
+
+@keyframes slide-in-r {
+  from { opacity: 0; transform: translateX(2.5rem); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes slide-in-l {
+  from { opacity: 0; transform: translateX(-2.5rem); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes banner-in {
+  from { opacity: 0; transform: translate(-50%, -1.5rem) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+/* Built-in Jellyfin app */
+@keyframes jf-fade {
+  from { opacity: 0; transform: scale(1.03); }
+  to { opacity: 1; transform: none; }
+}
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.fx-performance [style*="jf-fade"] { animation-duration: 1ms !important; }

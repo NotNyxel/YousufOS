@@ -1,0 +1,85 @@
+# Builds YousufOS and publishes a GitHub release when a version tag is pushed:
+#   git tag v1.7.0 && git push origin v1.7.0
+# TVs with updates turned on (Settings → System → Updates) find it and offer
+# to install it. The release has the .deb and a SHA256SUMS file the TV checks.
+# Release notes come from that version's section in CHANGELOG.md.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    outputs:
+      exists: ${{ steps.look.outputs.exists }}
+    steps:
+      - id: look
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A release that was already published (by hand or earlier) is left alone.
+          if [ "${GITHUB_REF_TYPE}" = tag ] && gh release view "${GITHUB_REF_NAME}" -R "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "exists=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=0" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.exists != '1'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev \
+            libayatana-appindicator3-dev libudev-dev build-essential curl file
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Check the version matches the tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          v=$(node -p "require('./package.json').version")
+          [ "v$v" = "${GITHUB_REF_NAME}" ] || { echo "package.json is $v but the tag is ${GITHUB_REF_NAME}"; exit 1; }
+
+      - name: Build
+        run: |
+          npm ci
+          npx eslint src --quiet
+          npx tauri build --bundles deb
+
+      - name: Checksums
+        run: |
+          cd src-tauri/target/release/bundle/deb
+          sha256sum *.deb > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          awk -v v="$v" '$0 ~ "^## " v "( |$)" {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md || true
+          [ -s notes.md ] || echo "YousufOS $v" > notes.md
+          cd src-tauri/target/release/bundle/deb
+          gh release create "${GITHUB_REF_NAME}" *.deb SHA256SUMS \
+            --title "YousufOS $v" --notes-file "$GITHUB_WORKSPACE/notes.md"
