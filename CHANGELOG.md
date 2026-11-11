@@ -1,0 +1,115 @@
+# Changelog
+
+Every YousufOS release. Install a release on the TV laptop with
+`sudo apt install ./YousufOS_<version>_amd64.deb`, or let the TV update itself
+(Settings → System → Updates, from 1.7.0).
+
+The source code in this repository starts with 1.7.0. Earlier versions are available as installers on their releases.
+
+## 1.6.0 · 11 November 2026
+
+### The YousufOS Jellyfin app
+- Jellyfin rebuilt in the YousufOS style, made for the remote and the Xbox controller instead of a mouse.
+- Sign in with Quick Connect (enter a code on your phone) or a user name and password.
+- Home with Continue watching, Next up and Recently added in each library. Categories appear only for libraries you have (films, shows, music and more).
+- Film and show pages with seasons, episodes, "More like this", favourites and watched/unwatched.
+- Playback in mpv for every format, with resume, audio and subtitle choice, "Skip intro", and progress synced back to the server.
+- Music: albums, shuffle and playback inside YousufOS.
+- Search across films, shows and music.
+- Full Arabic and right-to-left support.
+- Jellyfin's own web page is still one switch (or Y on the tile) away.
+
+### Remote navigation in web apps
+- The D-pad and remote arrows jump between buttons, posters and links in web apps like Netflix, Shahid and YouTube, with a visible highlight. The left stick still moves a pointer.
+- Fixes for Shahid cards, page jumps when scrolling and carousel arrows that only appeared on hover.
+
+## 1.5.0 · 11 November 2026
+
+### Wallpapers from your location
+- Photos of your city and the rest of your country from Wikimedia Commons, changing through the day: 3,580 photos covering 250 countries and territories.
+- Photo credit shown on screen.
+- The built-in UAE photos are used when the location's photos can't load.
+
+### Location and prayer times
+- Choose any country, then a city.
+- More calculation methods: Moonsighting Committee, Turkey (Diyanet), Tehran, and Singapore / Malaysia / Indonesia.
+- A confirmation of the location and calculation method after setting it.
+
+## 1.4.0 · 1 November 2026
+
+### New
+- **Browser:** a TV-friendly web browser inside YousufOS with search, quick links, back, forward and reload.
+- **On-screen keyboard:** opens when the controller selects a text box in any app (X also opens it), in English and Arabic.
+- **Weather:** today's temperature and conditions under the clock.
+- **Home layouts:** one large app card (← → to switch) next to the Ayah of the day, with switches for app cards, the Ayah and today's hadith.
+- **Servers on your network:** set the Jellyfin and Home Assistant addresses in Settings → Apps.
+
+### Live TV
+- More official channels: Al Saudiya, Al Ekhbariya, Sharjah TV, Sharjah 2, CNBC Arabia and Al Jazeera Mubasher.
+
+## 1.3.0 · 1 November 2026
+
+### Apps open inside YousufOS
+- Apps now open inside YousufOS: no extra windows, cookie pop-ups accepted automatically, links stay on screen.
+- Protected services (Netflix, Shahid and others) open in full-screen Chrome. Each app can be set to open in Chrome, and Y on a tile opens it there once.
+- Xbox controller inside apps: left stick pointer, A to click, right stick to scroll, X play/pause, Y fullscreen, LB / RB to skip 10 seconds. The Xbox button or F12 returns to YousufOS.
+
+### New free-to-watch apps
+- tabii (TRT), Dubai+ (Awaan), Al Jazeera 360, Weyyak, Plex Free Movies, Viki, NASA+, Red Bull TV, TED and Classic Films (Internet Archive).
+
+### Live TV
+- **Official channels** straight from the broadcasters: Makkah (Qur'an TV), Madinah (Sunnah TV), Al Jazeera, Al Jazeera English, Al Arabiya, Al Hadath, Sky News Arabia, Asharq News, France 24 Arabic, DW Arabic and TRT Arabi.
+- If the built-in player can't play a channel, mpv takes over automatically.
+- Favourites with Y, and clearer messages when a channel is offline or blocked in your country.
+
+### Other
+- Controller help screen and on-screen controls guide.
+- New package dependencies: `mpv` and audio utilities.
+
+## 1.2.0 · 31 October 2026
+
+### New sections
+- **Live TV:** free channel lists from iptv-org (UAE, Saudi, Arabic, Religious, News, Kids, Documentary, Sports), favourites, ▲ ▼ to change channel.
+- **Games:** Snake, Blocks, 2048, Memory Match and Tic-Tac-Toe, with best scores.
+- **22 languages**, with Arabic, Urdu and Persian switching the whole screen to right-to-left.
+
+### Prayer and reminders
+- Choice of Adhan voice: Makkah, Madinah, Sheikh Zayed Mosque, Mishary Alafasy and more, with a special Fajr Adhan.
+- The Adhan pauses other media and brings YousufOS to the front.
+- Eid takbir with audio during the takbir days, and "Eid Mubarak" on Eid days.
+- Istighfar reminders with quiet hours at night.
+- Hijri date adjustment and Asr method.
+
+### Look and feel
+- 14 themes, including Abyss (AMOLED), Liwa Sands, Oasis Palm, Arabian Gulf, Corniche Sunset, Old Souq and Mint Tea.
+- Interface and Qur'an fonts, accent colour, card opacity and blur, wallpaper dimming, interface size and visual-effects level (Performance mode for slower laptops).
+- Ambient sound: calm music, rain, ocean, desert wind and desert night generated live, or Qur'an recitation.
+- Screensaver: Clock, Prayer Focus or UAE Photography, with OLED drift protection.
+- More apps with their real logos, including Apple TV, Anghami, Crunchyroll, Google Photos, Home Assistant, Plex and Quran.com.
+
+### System
+- Launch at login, restart, shut down and exit to the Ubuntu desktop.
+- Xbox controller support across YousufOS.
+- New package dependencies: GStreamer plugins for the built-in video player.
+
+## 1.1.0 · 31 October 2026
+
+- **Ayah of the day** on Home: a Qur'an verse in Arabic with English translation and tafsir.
+- **Istighfar reminders:** a gentle reminder to say Astaghfirullah.
+- More UAE photo wallpapers.
+- New themes: Onyx (AMOLED), Crimson Moon, Desert Khaki, Under the Sea and Cotton Candy.
+- Amiri Qur'an font.
+- Home screen settings, including pinned apps side by side.
+- Netflix and Prime Video open in Google Chrome so protected video plays.
+
+## 1.0.0 · 31 October 2026
+
+The first release.
+
+- Google TV-style Home with a large clock, Gregorian and Hijri date, location, next-prayer countdown and UAE photo wallpapers.
+- Prayer page with Fajr, Sunrise, Dhuhr, Asr, Maghrib and Isha, the current prayer highlighted, and countdowns to Ramadan, the Eids, Arafah, Islamic New Year and Ashura.
+- Adhan at prayer times with a full-screen notice.
+- Today's hadith: 30 short authentic hadith, changing daily.
+- News page and app shortcuts (YouTube, Netflix, Prime Video, Shahid, Disney+, OSN+, STARZPLAY, Jellyfin).
+- Settings for appearance, backgrounds, location, prayer (UAE Awqaf, Umm Al-Qura, Muslim World League and more), screensaver and system.
+- Location detected automatically, or chosen from UAE emirates, Gulf and other cities.
