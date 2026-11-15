@@ -17,3 +17,7 @@ src-tauri/gen/schemas
 !.vscode/extensions.json
 .idea
 .DS_Store
+
+# Signing keys never go in the repository
+*.jks
+_keys/
