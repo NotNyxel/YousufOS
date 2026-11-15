@@ -16,7 +16,8 @@ export const DEFAULTS = {
   wallDim: 0, // extra wallpaper dimming %
   uiScale: 100, // % of the 10-foot default size
   clockWeight: 200, // 200 light | 400 regular | 700 bold
-  effects: "balanced", // full | balanced | performance
+  // full | balanced | performance (Android TVs: lighter, their chips are slower)
+  effects: typeof window !== "undefined" && window.YousufAndroid ? "performance" : "balanced",
   language: "en", // see src/i18n/languages.js
   uiFont: "manrope", // see src/lib/fonts.js
   arabicFont: "amiri", // hadith & Qur'an text

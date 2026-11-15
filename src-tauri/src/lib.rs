@@ -17,7 +17,9 @@ mod admin;
 mod cameras;
 mod monitor;
 mod cdp;
+#[cfg_attr(mobile, path = "mobile/embed.rs")]
 mod embed;
+#[cfg_attr(mobile, path = "mobile/gamepad.rs")]
 mod gamepad;
 mod media;
 mod player;
@@ -165,12 +167,16 @@ fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 pub(crate) fn show_launcher(app: &AppHandle) {
+    #[cfg(desktop)]
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.unminimize();
         let _ = w.show();
         let _ = w.set_fullscreen(true);
         let _ = w.set_focus();
     }
+    // Android: the interface asks the TV to bring YousufOS to the front.
+    #[cfg(mobile)]
+    let _ = app.emit("bring-to-front", ());
 }
 
 /// Ask the browser to quit cleanly (so cookies/logins are saved), then force it.
@@ -364,7 +370,7 @@ fn http() -> &'static reqwest::Client {
     static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
     CLIENT.get_or_init(|| {
         reqwest::Client::builder()
-            .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36 YousufOS/1.8")
+            .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36 YousufOS/1.9")
             .timeout(Duration::from_secs(25))
             .build()
             .expect("http client")
@@ -480,6 +486,7 @@ fn adhan_begin(app: AppHandle, mute_media: bool) {
     if player::stop(&app) {
         let _ = app.emit("player-closed", serde_json::json!({ "error": false }));
     }
+    #[cfg(desktop)]
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.set_always_on_top(true);
     }
@@ -492,6 +499,7 @@ fn adhan_end(app: AppHandle) {
     if close_apps(&app) {
         let _ = app.emit("app-closed", ());
     }
+    #[cfg(desktop)]
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.set_always_on_top(false);
     }
@@ -723,7 +731,6 @@ fn home_shortcuts(app: &AppHandle) -> Vec<String> {
     from_config.unwrap_or_else(|| vec!["F12".into(), "Ctrl+Alt+Home".into()])
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 
 // ---------------------------------------------------------- event log
 // The last few hundred things that happened (for the admin panel).
@@ -909,11 +916,13 @@ async fn update_check(repo: String, token: String) -> Result<serde_json::Value, 
     let assets = v["assets"].as_array().cloned().unwrap_or_default();
     let pick = |pred: &dyn Fn(&str) -> bool| assets.iter().find(|a| pred(a["name"].as_str().unwrap_or(""))).cloned();
     let deb = pick(&|n| n.ends_with("_amd64.deb"));
+    let apk = pick(&|n| n.to_ascii_lowercase().ends_with(".apk"));
     let sums = pick(&|n| n.eq_ignore_ascii_case("SHA256SUMS") || n.ends_with(".sha256"));
     Ok(serde_json::json!({
         "version": v["tag_name"].as_str().unwrap_or("").trim_start_matches('v'),
         "name": v["name"], "notes": v["body"], "published": v["published_at"],
         "deb": deb.as_ref().map(|a| serde_json::json!({ "url": a["url"], "name": a["name"], "size": a["size"] })),
+        "apk": apk.as_ref().map(|a| serde_json::json!({ "url": a["url"], "name": a["name"], "size": a["size"] })),
         "sums": sums.as_ref().map(|a| a["url"].clone()),
     }))
 }
@@ -1037,15 +1046,19 @@ mod tests {
     }
 }
 
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        // Running `yousufos` again (e.g. bound to the remote's Home key in
-        // GNOME Settings > Keyboard) brings you back to the launcher.
+    let builder = tauri::Builder::default();
+    // Running `yousufos` again (e.g. bound to the remote's Home key in
+    // GNOME Settings > Keyboard) brings you back to the launcher.
+    #[cfg(desktop)]
+    let builder = builder
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| go_home(app)))
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
-        ))
+        ));
+    builder
         .manage(Running::default())
         .manage(ChromeLink::default())
         .manage(Current::default())

@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { Check, Moon } from "lucide-react";
 import { focusDefault } from "../lib/nav";
 import { useI18n } from "../lib/settings-store";
+import { isAndroid } from "../lib/platform";
 
 const SLEEP_ACTIONS = [
   { id: "screen", label: "Stop and turn off the screen" },
@@ -57,7 +58,7 @@ export function SleepMenu({ sleep, canEnd, action, onSet, onAction, onClose }) {
         </div>
         <div className="mt-[1.4rem] text-[0.95rem] font-semibold uppercase tracking-[0.16em] text-ink-faint">{t("Then")}</div>
         <div className="mt-[0.5rem] flex flex-col gap-[0.4rem]">
-          {SLEEP_ACTIONS.map((a) => (
+          {SLEEP_ACTIONS.filter((a) => !(a.id === "suspend" && isAndroid())).map((a) => (
             <button key={a.id} data-nav onClick={() => onAction(a.id)} className="focus-row flex items-center justify-between rounded-[1rem] px-[1.2rem] py-[0.75rem] text-start text-[1.1rem] font-semibold">
               {t(a.label)}
               {action === a.id && <Check className="h-[1.3rem] w-[1.3rem] text-accent" />}

@@ -948,5 +948,22 @@
   "The doorbell's button or ring entity, e.g. binary_sensor.doorbell_ring": "زر الجرس أو كيان الرنين، مثل binary_sensor.doorbell_ring",
   "Server": "الخادم",
   "Saved ({tail})": "محفوظ ({tail})",
-  "That address isn't a Jellyfin server": "هذا العنوان ليس خادم Jellyfin"
+  "That address isn't a Jellyfin server": "هذا العنوان ليس خادم Jellyfin",
+  "The apps on this TV. Apps under Get from Google Play open their page in the Play Store.": "التطبيقات الموجودة على هذا التلفاز. التطبيقات تحت «احصل عليها من Google Play» تفتح صفحتها في متجر Play.",
+  "More on this TV": "المزيد على هذا التلفاز",
+  "Get from Google Play": "احصل عليها من Google Play",
+  "Android TV": "Android TV",
+  "Display over other apps": "الظهور فوق التطبيقات الأخرى",
+  "On: YousufOS comes to the front for the Adhan, and cameras can show over other apps": "مفعّل: يظهر YousufOS في المقدمة عند الأذان، ويمكن عرض الكاميرات فوق التطبيقات الأخرى",
+  "Off: turn it on so the Adhan can interrupt Netflix, YouTube and other apps": "غير مفعّل: فعّله ليقاطع الأذان نتفليكس ويوتيوب والتطبيقات الأخرى",
+  "Install updates": "تثبيت التحديثات",
+  "Allowed: YousufOS can install its own updates": "مسموح: يستطيع YousufOS تثبيت تحديثاته",
+  "Not allowed yet: needed to install YousufOS updates": "غير مسموح بعد: مطلوب لتثبيت تحديثات YousufOS",
+  "TV settings": "إعدادات التلفاز",
+  "Network, picture, sound, inputs and the rest of the TV's own settings": "الشبكة والصورة والصوت والمداخل وبقية إعدادات التلفاز",
+  "YousufOS app info": "معلومات تطبيق YousufOS",
+  "Storage, permissions and notifications for YousufOS": "التخزين والأذونات والإشعارات الخاصة بـ YousufOS",
+  "Remote: OK select · Back back · Channel ▲ ▼ switch pages · Menu or Info: sidebar · Home: back to YousufOS": "جهاز التحكم: OK للاختيار · رجوع للعودة · القناة ▲ ▼ للتنقل بين الصفحات · القائمة أو المعلومات: الشريط الجانبي · الرئيسية: العودة إلى YousufOS",
+  "Coloured buttons: red Live TV · green Qur'an · yellow Prayer · blue Apps": "الأزرار الملونة: الأحمر البث المباشر · الأخضر القرآن · الأصفر الصلاة · الأزرق التطبيقات",
+  "In the video player: ◀ ▶ −10 s / +10 s · OK pause · ▲ ▼ or Channel ▲ ▼ change channel (Live TV) · Back close": "في مشغل الفيديو: ◀ ▶ ‎−10 ث / ‎+10 ث · OK إيقاف مؤقت · ▲ ▼ أو القناة ▲ ▼ لتغيير القناة (البث المباشر) · رجوع للإغلاق"
 }

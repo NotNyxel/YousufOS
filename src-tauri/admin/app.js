@@ -520,7 +520,7 @@
 
   function updatesBlock() {
     const out = h("div", { class: "card" }, h("div", { class: "sub" }, "Checking…"));
-    const deb = h("input", { type: "file", accept: ".deb", style: "display:none" });
+    const deb = h("input", { type: "file", accept: ".deb,.apk", style: "display:none" });
     deb.addEventListener("change", safe(async () => {
       const f = deb.files?.[0];
       if (!f) return;
@@ -537,7 +537,7 @@
         h("div", { class: "btns", style: "margin-top:10px" },
           r.available ? h("button", { class: "btn primary", onclick: safe(async () => { await call("update.install"); toast("Downloading: the TV will ask for the password"); }) }, "Install update") : null,
           h("button", { class: "btn", onclick: show }, "Check again"),
-          h("button", { class: "btn", onclick: () => deb.click() }, "Install a .deb file"),
+          h("button", { class: "btn", onclick: () => deb.click() }, "Install a file (.deb / .apk)"),
           deb,
         ),
       );

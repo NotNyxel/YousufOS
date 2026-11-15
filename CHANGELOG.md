@@ -6,6 +6,26 @@ Every YousufOS release. Install a release on the TV laptop with
 
 The source code in this repository starts with 1.7.0. Earlier versions are available as installers on their releases.
 
+## 1.9.0 · 15 November 2026
+
+YousufOS on Android TV.
+
+### Android TV and Google TV
+- YousufOS now also comes as an Android app (`YousufOS_1.9.0_android.apk`) for TVs with Android TV or Google TV built in, and Android TV boxes. It becomes the TV's home screen: the TV starts in YousufOS and the remote's **Home** button comes back to it.
+- **The whole remote works:** arrows, OK and Back; Channel ▲ ▼ switch pages; Menu / Info jump to the sidebar; Play / Pause; the red, green, yellow and blue buttons open Live TV, Qur'an, Prayer and Apps. Volume, Power, Input and the remote's Netflix / YouTube buttons stay with the TV.
+- **Apps** shows the TV's own Android apps. Apps YousufOS knows keep their YousufOS tiles, everything else installed is listed with its own TV banner, and known apps that aren't installed open in Google Play.
+- **A new video player for Live TV, Jellyfin and cameras**, built on Android's own player: hardware decoding up to 4K, subtitles and audio tracks, resume, intro skipping. Live TV: ▲ ▼ or Channel ▲ ▼ change channel.
+- **The Adhan interrupts other apps:** at prayer time YousufOS comes to the front over Netflix, YouTube or anything else.
+- The camera / doorbell window and the Live TV small window float over other apps.
+- The phone remote and admin panel work as on the laptop (`http://<TV address>:8686`); its buttons control YousufOS and its video player.
+- Updates from GitHub install the new `.apk` (Android asks to confirm). The phone admin panel can send an `.apk` too.
+- Settings → System has an **Android TV** section: the permissions YousufOS needs, the TV's own settings, and a remote guide.
+- Visual effects start on *Performance* on Android TVs (smoother on TV chips).
+- First install from a Windows PC with `scripts/install-android-tv.ps1`; see [docs/android-tv.md](docs/android-tv.md). It checks YousufOS works before making it the home screen, and `-Undo` brings the TV's own home screen back.
+
+### Releases
+- Each release now has the Ubuntu `.deb` and the Android TV `.apk`, both in `SHA256SUMS`.
+
 ## 1.8.1 · 11 November 2026
 
 Fixes.

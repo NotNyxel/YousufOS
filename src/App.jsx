@@ -41,7 +41,8 @@ import { ADHAN_PRAYERS, prayerSchedule } from "./lib/prayer";
 import { pickWallpapers } from "./lib/wallpapers";
 import { loadWorldCatalog, worldPhotos } from "./lib/worldWallpapers";
 import { focusDefault, focusEl, pressKey, restoreMain, useGamepad, useSpatialNav } from "./lib/nav";
-import { closeApp, fileSrc, invoke, isTauri, launchApp, listImages, listen, playExternal, playerCommand, system } from "./lib/platform";
+import { android, closeApp, fileSrc, invoke, isAndroid, isTauri, launchApp, listImages, listen, playExternal, playerCommand, system } from "./lib/platform";
+import { androidAppList, openAndroidApp, useAndroidApps } from "./lib/android-apps";
 import { appOpensInside } from "./lib/apps";
 import VolumeHud from "./components/VolumeHud";
 import { detectLocation } from "./lib/location";
@@ -51,9 +52,17 @@ import ReminderBanner from "./components/ReminderBanner";
 import { ISTIGHFAR, TAKBIR, eidToday, isQuietTime, playChime, takbirPeriod } from "./lib/reminders";
 
 const DEFAULT_IMAGE_DIR = "~/Pictures/YousufOS";
+// Red, green, yellow and blue on the TV remote.
+const COLOR_PAGES = { ColorRed: "livetv", ColorGreen: "quran", ColorYellow: "prayer", ColorBlue: "apps" };
 
 export default function App() {
-  const { settings, update, replace, accent, apps: allApps, loaded, i18n } = useSettings();
+  const { settings, update, replace, accent, apps: catalogApps, loaded, i18n } = useSettings();
+  // Android TV: the TV's own apps (known ones keep YousufOS's logos).
+  const androidInstalled = useAndroidApps();
+  const { apps: allApps, more: moreApps } = useMemo(
+    () => (isAndroid() ? androidAppList(catalogApps, androidInstalled) : { apps: catalogApps, more: [] }),
+    [catalogApps, androidInstalled],
+  );
   // ---- Kids profile: only the apps, pages and time a parent allowed --------
   const kids = settings.kids || {};
   const kidsOn = !!kids.active;
@@ -278,6 +287,10 @@ export default function App() {
       } else if (e.key === "Home" || e.key === "BrowserHome") {
         e.preventDefault();
         go("home");
+      } else if (COLOR_PAGES[e.key]) {
+        // The TV remote's coloured buttons jump straight to a page.
+        e.preventDefault();
+        if (ORDER.includes(COLOR_PAGES[e.key])) go(COLOR_PAGES[e.key]);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -381,6 +394,21 @@ export default function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [now, schedule, settings.adhan.enabled, adhan]);
+
+  // Android TV: come to the front at prayer time even when another app is open.
+  const alarmKey = settings.adhan.enabled ? schedule.today.fajr.getTime() + "-" + schedule.tomorrow.fajr.getTime() : "off";
+  useEffect(() => {
+    if (!isAndroid()) return;
+    const at = settings.adhan.enabled
+      ? [schedule.today, schedule.tomorrow].flatMap((d) => ADHAN_PRAYERS.map((k) => d[k]?.getTime())).filter((x) => x > Date.now()).sort((a, b) => a - b)
+      : [];
+    try {
+      android().setAlarms(JSON.stringify(at.slice(0, 12).map((x) => ({ at: x + 1000, kind: "adhan" }))));
+    } catch (e) {
+      console.warn("alarms", e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alarmKey]);
 
   // ---- Istighfar reminders & Eid takbir -----------------------------------
   useEffect(() => {
@@ -498,6 +526,8 @@ export default function App() {
     else if (sleepAction === "screen") {
       setSleepDark(true);
       system("screen-off").catch(() => {});
+      // Android TV: let the TV switch itself off as it normally would.
+      if (isAndroid()) android().keepScreenOn(false);
     }
   }, [sleepAction, stopEverything]);
   const goToSleepRef = useRef(goToSleep);
@@ -561,6 +591,7 @@ export default function App() {
       setScreensaver(null);
       if (sleepDark) {
         setSleepDark(false);
+        if (isAndroid()) android().keepScreenOn(true);
         system("screen-on").catch(() => {});
       }
       if (d.chime !== false) {
@@ -607,6 +638,11 @@ export default function App() {
         go("home");
       }),
       listen("app-shown", () => setLaunching(null)),
+      // Android TV: phone-remote buttons go to Android (YousufOS or its player),
+      // and YousufOS comes to the front when asked (Adhan, Home on the phone).
+      listen("remote-button", (b) => isAndroid() && android().key(String(b))),
+      listen("bring-to-front", () => isAndroid() && android().toFront()),
+      listen("android-alarm", () => setScreensaver(null)),
       listen("volume", (level) => setVolume({ level, at: Date.now() })),
       listen("gamepad-connected", (name) => setToast(t("Controller connected: {name}", { name }))),
       listen("app-moved-to-chrome", () => setToast(t("This video is protected, so it opened in Chrome"))),
@@ -626,6 +662,14 @@ export default function App() {
       if (app.id === "jellyfin" && settings.jellyfin?.native !== false && !opts.chrome && !opts.web) {
         setJfStart(opts.jfStart || null);
         setJellyfin(app.url || "http://localhost:8096");
+        return;
+      }
+      if (isAndroid()) {
+        try {
+          openAndroidApp(app);
+        } catch (e) {
+          setToast(t("Couldn't open {name}: {error}", { name: app.name, error: e.message || String(e) }));
+        }
         return;
       }
       const inside = !opts.chrome && appOpensInside(app, settings.appView);
@@ -828,7 +872,7 @@ export default function App() {
         }}
       />
     ),
-    apps: <Apps apps={apps} onLaunch={onLaunch} />,
+    apps: <Apps apps={apps} more={kidsOn ? [] : moreApps} onLaunch={onLaunch} />,
     search: (
       <Search
         settings={settings}
@@ -942,6 +986,8 @@ export default function App() {
         <SleepScreen
           onWake={() => {
             setSleepDark(false);
+            if (isAndroid()) android().keepScreenOn(true);
+        if (isAndroid()) android().keepScreenOn(true);
             system("screen-on").catch(() => {});
           }}
         />

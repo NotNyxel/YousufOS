@@ -3,10 +3,5 @@
   "identifier": "default",
   "description": "Permissions for the YousufOS launcher window",
   "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "autostart:allow-enable",
-    "autostart:allow-disable",
-    "autostart:allow-is-enabled"
-  ]
+  "permissions": ["core:default"]
 }

@@ -1,5 +1,8 @@
 // New versions from GitHub releases (see README → Updates).
-import { invoke, isTauri } from "./platform";
+import { invoke, isAndroid, isTauri } from "./platform";
+
+// The package for this TV: the Android .apk or the Ubuntu .deb.
+const pkgOf = (r) => (isAndroid() ? r?.apk : r?.deb);
 
 export const CURRENT = __APP_VERSION__;
 export function newer(a, b) {
@@ -26,14 +29,14 @@ export async function checkUpdate(cfg) {
   const repo = repoName(cfg?.repo) || DEFAULT_REPO;
   try {
     const r = await invoke("update_check", { repo, token: cleanToken(cfg?.token) });
-    return { current: CURRENT, latest: r.version, available: newer(r.version, CURRENT) && !!r.deb, notes: r.notes || "", release: r };
+    return { current: CURRENT, latest: r.version, available: newer(r.version, CURRENT) && !!pkgOf(r), notes: r.notes || "", release: r };
   } catch (e) {
     return { current: CURRENT, error: String(e) };
   }
 }
 export async function installUpdate(cfg, release, onStep) {
   onStep?.("download");
-  const path = await invoke("update_download", { token: cleanToken(cfg.token), debUrl: release.deb.url, debName: release.deb.name, sumsUrl: release.sums || null });
+  const path = await invoke("update_download", { token: cleanToken(cfg.token), debUrl: pkgOf(release).url, debName: pkgOf(release).name, sumsUrl: release.sums || null });
   onStep?.("install");
   await invoke("update_install", { path });
 }

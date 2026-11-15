@@ -6,14 +6,94 @@ import { listen as tauriListen } from "@tauri-apps/api/event";
 export const isTauri = () =>
   typeof window !== "undefined" && !!window.__TAURI_INTERNALS__;
 
+// ---------------------------------------------------------------- Android
+// On Android TV the same interface runs inside the YousufOS Android app,
+// which adds window.YousufAndroid (installed apps, the video player, the
+// remote's extra buttons, updates). See src-tauri/gen/android/.../Bridge.kt.
+export const isAndroid = () => typeof window !== "undefined" && !!window.YousufAndroid;
+export const android = () => window.YousufAndroid;
+
+// Events from the Android side: window.__yaEmit(name, payload).
+const androidListeners = new Map();
+if (typeof window !== "undefined") {
+  window.__yaEmit = (name, payload) => {
+    for (const cb of androidListeners.get(name) || []) {
+      try {
+        cb(payload);
+      } catch (e) {
+        console.warn(name, e);
+      }
+    }
+  };
+}
+
+const headerObject = (list) =>
+  Object.fromEntries(
+    (list || [])
+      .map((h) => {
+        const i = String(h).indexOf(":");
+        return i > 0 ? [h.slice(0, i).trim(), h.slice(i + 1).trim()] : null;
+      })
+      .filter(Boolean),
+  );
+
+const NOT_ON_ANDROID = "This isn't available on the Android TV version yet.";
+// Laptop commands that work differently on Android.
+const ANDROID_COMMANDS = {
+  play_media: ({ entries, headers, audioOnly, sync }) =>
+    // okToApp: Jellyfin decides what OK does (skip the intro or pause).
+    android().play(JSON.stringify({ kind: "media", entries, headers: headerObject(headers), audioOnly: !!audioOnly, okToApp: sync !== undefined })),
+  play_external: ({ channels, index }) => android().play(JSON.stringify({ kind: "live", entries: channels, index: index || 0 })),
+  player_command: ({ args }) => android().playerCommand(JSON.stringify(args || [])),
+  pip_start: ({ url, title, corner, size, muted, userAgent, headers }) => {
+    const r = android().pipStart(JSON.stringify({ url, title, corner, size, muted, userAgent: userAgent || "", headers: headerObject(headers) }));
+    if (r === "overlay") {
+      android().openSettings("overlay");
+      throw new Error("Allow YousufOS to display over other apps, then try again.");
+    }
+  },
+  pip_stop: () => android().pipStop(),
+  pip_running: () => android().pipRunning(),
+  change_volume: ({ step }) => android().volume(step > 0 ? 1 : step < 0 ? -1 : 0),
+  close_app: () => null,
+  launch_app: () => {
+    throw new Error(NOT_ON_ANDROID);
+  },
+  record_start: () => {
+    throw new Error(NOT_ON_ANDROID);
+  },
+  download_start: () => {
+    throw new Error(NOT_ON_ANDROID);
+  },
+  update_install: ({ path }) => {
+    const r = android().installApk(path);
+    if (r === "permission") throw new Error("Allow YousufOS to install apps (the setting just opened), then press Install again.");
+    if (r) throw new Error(r);
+  },
+  system_action: ({ action }) => {
+    if (action === "screen-off" || action === "screen-on" || action === "exit") return null;
+    if (action === "settings") return android().openSettings("");
+    throw new Error(NOT_ON_ANDROID);
+  },
+};
+
 export async function invoke(cmd, args) {
   if (!isTauri()) throw new Error(`"${cmd}" needs the YousufOS desktop runtime`);
+  if (isAndroid() && ANDROID_COMMANDS[cmd]) return ANDROID_COMMANDS[cmd](args || {});
   return tauriInvoke(cmd, args);
 }
 
 export async function listen(event, cb) {
   if (!isTauri()) return () => {};
-  return tauriListen(event, (e) => cb(e.payload));
+  const off = await tauriListen(event, (e) => cb(e.payload));
+  if (!isAndroid()) return off;
+  const set = androidListeners.get(event) || new Set();
+  set.add(cb);
+  androidListeners.set(event, set);
+  return () => {
+    off();
+    set.delete(cb);
+  };
 }
 
 export async function fetchText(url) {
@@ -173,6 +253,10 @@ export async function system(action) {
 }
 
 export async function adhanBegin(muteMedia) {
+  if (isAndroid()) {
+    android().playerCommand('["quit"]');
+    android().toFront();
+  }
   if (isTauri()) return invoke("adhan_begin", { muteMedia }).catch(console.warn);
 }
 export async function adhanEnd() {
@@ -180,7 +264,7 @@ export async function adhanEnd() {
 }
 
 export async function setAutostart(enabled) {
-  if (!isTauri()) return;
+  if (!isTauri() || isAndroid()) return;
   const m = await import("@tauri-apps/plugin-autostart");
   return enabled ? m.enable() : m.disable();
 }

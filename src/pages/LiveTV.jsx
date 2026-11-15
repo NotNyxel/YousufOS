@@ -3,7 +3,7 @@ import { Heart, LoaderCircle, Radio, TvMinimal } from "lucide-react";
 import TvPlayer from "../components/TvPlayer";
 import { OFFICIAL, SOURCES, loadSource } from "../lib/iptv";
 import { focusEl } from "../lib/nav";
-import { invoke, isTauri, listen, playExternal } from "../lib/platform";
+import { invoke, isAndroid, isTauri, listen, playExternal } from "../lib/platform";
 import { useI18n } from "../lib/settings-store";
 
 function ChannelCard({ ch, onOpen, isDefault, isFav, onFav, onPip }) {
@@ -44,7 +44,8 @@ function ChannelCard({ ch, onOpen, isDefault, isFav, onFav, onPip }) {
 function LiveTV({ settings, update, paused, onPlayingChange, kids = false }) {
   const { t } = useI18n();
   const iptv = settings.iptv;
-  const player = iptv.player || "auto";
+  // Android TV: always the TV's own video player (plays nearly every stream).
+  const player = isAndroid() ? "mpv" : iptv.player || "auto";
   const sources = useMemo(
     () =>
       kids

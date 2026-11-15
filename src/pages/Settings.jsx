@@ -14,7 +14,8 @@ import { findCountry } from "../lib/locations";
 import { METHODS } from "../lib/prayer";
 import { COLLECTIONS } from "../lib/wallpapers";
 import { hexToRgb, hslToRgb, rgbToHex, rgbToHsl } from "../lib/color";
-import { system, setAutostart, isTauri } from "../lib/platform";
+import { system, setAutostart, isTauri, isAndroid } from "../lib/platform";
+import { AndroidRows } from "./SettingsAndroid";
 import { THEMES } from "../lib/themes";
 import { DEFAULT_APPS } from "../lib/apps";
 import { focusEl } from "../lib/nav";
@@ -313,6 +314,7 @@ function Settings({ settings, update, section, setSection, actions, customCount 
     ),
     apps: (
       <>
+        {!isAndroid() && (<>
         <SectionTitle>Opening apps</SectionTitle>
         <OptionRow isDefault label="Open apps" hint={settings.appView.mode === "chrome" ? "Every app opens in Google Chrome" : "Inside YousufOS, no extra windows. Netflix, Shahid and other protected services always use Chrome"}
           value={settings.appView.mode} onChange={(v) => update("appView.mode", v)}
@@ -327,6 +329,7 @@ function Settings({ settings, update, section, setSection, actions, customCount 
           value={settings.dpad !== false}
           onChange={(v) => update("dpad", v)}
         />
+        </>)}
         <SectionTitle>Servers on your network</SectionTitle>
         <ActionRow label="Jellyfin server" hint={appUrl("jellyfin")} Icon={Pencil} onAction={() => setEditing("jellyfin")} />
         <ToggleRow
@@ -361,9 +364,9 @@ function Settings({ settings, update, section, setSection, actions, customCount 
     livetv: (
       <>
         <SectionTitle>Live TV</SectionTitle>
-        <OptionRow isDefault label="Player" hint={{ auto: "The built-in player first; if a channel won't play, mpv takes over", builtin: "Only the built-in player", mpv: "mpv plays almost every stream (installed with YousufOS)" }[settings.iptv.player || "auto"]}
+        {!isAndroid() && <OptionRow isDefault label="Player" hint={{ auto: "The built-in player first; if a channel won't play, mpv takes over", builtin: "Only the built-in player", mpv: "mpv plays almost every stream (installed with YousufOS)" }[settings.iptv.player || "auto"]}
           value={settings.iptv.player || "auto"} onChange={(v) => update("iptv.player", v)}
-          options={[{ value: "auto", label: "Automatic" }, { value: "builtin", label: "Built-in" }, { value: "mpv", label: "mpv" }]} />
+          options={[{ value: "auto", label: "Automatic" }, { value: "builtin", label: "Built-in" }, { value: "mpv", label: "mpv" }]} />}
         <div className="px-[1.5rem] pt-[0.6rem] text-[1rem] leading-relaxed text-ink-faint">
           {t("“Official channels” are the broadcasters' own live streams. Other lists are free streams collected by iptv-org; some are blocked outside their home country.")}
         </div>
@@ -378,6 +381,7 @@ function Settings({ settings, update, section, setSection, actions, customCount 
     kids: <KidsSection settings={settings} update={update} setStatus={setStatus} actions={actions} />,
     system: (
       <>
+        {isAndroid() ? <AndroidRows /> : (<>
         <SectionTitle>Startup</SectionTitle>
         <ToggleRow label="Launch YousufOS at login" value={settings.autostart}
           onChange={(v) => {
@@ -386,8 +390,10 @@ function Settings({ settings, update, section, setSection, actions, customCount 
           }} />
         <OptionRow label="Browser for protected apps" hint="Google Chrome is needed for Netflix and Prime Video (DRM)" value={settings.browser} onChange={(v) => update("browser", v)}
           options={[{ value: "", label: "Automatic" }, { value: "google-chrome", label: "Google Chrome" }, { value: "chromium", label: "Chromium" }, { value: "microsoft-edge", label: "Edge" }]} />
+        </>)}
         {isTauri() && <UpdatesRows settings={settings} update={update} setStatus={setStatus} />}
         {isTauri() && <BackupRows settings={settings} replace={replaceSettings} setStatus={setStatus} />}
+        {!isAndroid() && (<>
         <SectionTitle>Controller</SectionTitle>
         <div className="flex items-start gap-[1.2rem] px-[1.5rem] py-[0.6rem] text-[1.05rem] leading-relaxed text-ink-dim">
           <Gamepad2 className="mt-[0.2rem] h-[1.8rem] w-[1.8rem] shrink-0 text-accent" />
@@ -399,14 +405,17 @@ function Settings({ settings, update, section, setSection, actions, customCount 
             <div>{t("Xbox button, or View + Menu together: back to YousufOS from any app")}</div>
           </div>
         </div>
+        </>)}
         <SectionTitle>Power</SectionTitle>
-        <ActionRow label="Exit to Ubuntu desktop" hint="Closes the launcher" Icon={LogOut} confirm onAction={() => system("exit")} />
+        {!isAndroid() && <ActionRow label="Exit to Ubuntu desktop" hint="Closes the launcher" Icon={LogOut} confirm onAction={() => system("exit")} />}
         <ActionRow label="Reload YousufOS" Icon={RotateCcw} onAction={() => location.reload()} />
+        {!isAndroid() && (<>
         <ActionRow label="Sleep" Icon={Moon} confirm onAction={() => system("suspend")} />
         <ActionRow label="Restart computer" Icon={RotateCcw} confirm danger onAction={() => system("reboot")} />
         <ActionRow label="Shut down" Icon={Power} confirm danger onAction={() => system("poweroff")} />
+        </>)}
         <div className="px-[1.5rem] pt-[1.2rem] text-[1rem] text-ink-faint">
-          YousufOS {__APP_VERSION__} · {isTauri() ? t("Desktop runtime") : t("Browser preview")}
+          YousufOS {__APP_VERSION__} · {isAndroid() ? t("Android TV") : isTauri() ? t("Desktop runtime") : t("Browser preview")}
         </div>
       </>
     ),

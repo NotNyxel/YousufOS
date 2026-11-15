@@ -1,9 +1,13 @@
-# Builds YousufOS and publishes a GitHub release. Either:
+# Builds YousufOS (Ubuntu .deb and Android TV .apk) and publishes a GitHub release. Either:
 #   push the code to the "release" branch:  git push origin main:release
 #   or push a version tag:                  git tag v1.8.1 && git push origin v1.8.1
 # The version comes from package.json (a tag must match it). TVs with updates
 # turned on (Settings → System → Updates) find the release and offer to install
-# it. The release has the .deb and a SHA256SUMS file the TV checks.
+# it. The release has the .deb, the .apk and a SHA256SUMS file the TV checks.
+# The .apk is signed with the YousufOS key from two repository secrets:
+#   YOUSUFOS_KEYSTORE_B64       the keystore file, base64
+#   YOUSUFOS_KEYSTORE_PASSWORD  its password
+# (Without them the release has no .apk.)
 # Release notes come from that version's section in CHANGELOG.md.
 name: Release
 
@@ -41,7 +45,7 @@ jobs:
             echo "exists=0" >> "$GITHUB_OUTPUT"
           fi
 
-  build:
+  deb:
     needs: check
     if: needs.check.outputs.exists != '1'
     runs-on: ubuntu-24.04
@@ -81,11 +85,85 @@ jobs:
           npx eslint src --quiet
           npx tauri build --bundles deb
 
-      - name: Checksums
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: src-tauri/target/release/bundle/deb/*.deb
+
+  android:
+    needs: check
+    if: needs.check.outputs.exists != '1'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: key
+        env:
+          KS: ${{ secrets.YOUSUFOS_KEYSTORE_B64 }}
         run: |
-          cd src-tauri/target/release/bundle/deb
-          sha256sum *.deb > SHA256SUMS
-          cat SHA256SUMS
+          if [ -z "$KS" ]; then
+            echo "::warning::No signing key (YOUSUFOS_KEYSTORE_B64): this release has no Android .apk."
+            echo "ok=0" >> "$GITHUB_OUTPUT"
+          else
+            printf '%s' "$KS" | base64 -d > "$RUNNER_TEMP/yousufos.jks"
+            echo "ok=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.key.outputs.ok == '1'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - if: steps.key.outputs.ok == '1'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - if: steps.key.outputs.ok == '1'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+
+      - if: steps.key.outputs.ok == '1'
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: android
+
+      - name: Build the .apk
+        if: steps.key.outputs.ok == '1'
+        env:
+          YOUSUFOS_KEYSTORE: ${{ runner.temp }}/yousufos.jks
+          YOUSUFOS_KEYSTORE_PASSWORD: ${{ secrets.YOUSUFOS_KEYSTORE_PASSWORD }}
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;27.2.12479018" > /dev/null
+          export NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
+          npm ci
+          npx tauri android build --apk --target aarch64 armv7
+          v=$(node -p "require('./package.json').version")
+          mkdir -p out
+          cp src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk "out/YousufOS_${v}_android.apk"
+          ls -la out
+
+      - if: steps.key.outputs.ok == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: out/*.apk
+
+  publish:
+    needs: [check, deb, android]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist-release
+          merge-multiple: true
 
       - name: Publish the release
         env:
@@ -93,9 +171,15 @@ jobs:
           TAG: ${{ needs.check.outputs.tag }}
         run: |
           v="${TAG#v}"
+          cd dist-release
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+          cd ..
           awk -v v="$v" '$0 ~ "^## " v "( |$)" {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md || true
           [ -s notes.md ] || echo "YousufOS $v" > notes.md
-          printf '\n---\n**Install:** download `YousufOS_%s_amd64.deb`, then on the TV laptop run `sudo apt install ./YousufOS_%s_amd64.deb`, or update from the TV (Settings → System → Updates).\n' "$v" "$v" >> notes.md
-          cd src-tauri/target/release/bundle/deb
-          gh release create "$TAG" *.deb SHA256SUMS --target "$GITHUB_SHA" \
-            --title "YousufOS $v" --notes-file "$GITHUB_WORKSPACE/notes.md"
+          printf '\n---\n**Install on Ubuntu:** download `YousufOS_%s_amd64.deb`, then on the TV laptop run `sudo apt install ./YousufOS_%s_amd64.deb`, or update from the TV (Settings → System → Updates).\n' "$v" "$v" >> notes.md
+          if ls dist-release/*.apk > /dev/null 2>&1; then
+            printf '\n**Install on Android TV:** `YousufOS_%s_android.apk`; see [docs/android-tv.md](docs/android-tv.md) for the first install. After that, update from the TV.\n' "$v" >> notes.md
+          fi
+          gh release create "$TAG" dist-release/* --target "$GITHUB_SHA" \
+            --title "YousufOS $v" --notes-file notes.md

@@ -1,6 +1,6 @@
 # YousufOS
 
-A premium, Islamic-focused Smart TV interface for an Ubuntu laptop plugged into the living-room TV.
+A premium, Islamic-focused Smart TV interface for an Ubuntu laptop plugged into the living-room TV, and (from 1.9) for Android TVs and Google TV boxes.
 Google TV's simplicity, Apple TV's calm, prayer times and Adhan built in, and the UAE at its heart.
 Ubuntu, Docker, SSH, Tailscale, Jellyfin and Home Assistant keep running underneath.
 
@@ -8,7 +8,7 @@ Built with **React + Tailwind** (UI) and **Tauri / Rust** (native layer).
 
 ![YousufOS Home: clock, Hijri date, next prayer, Jellyfin Continue Watching, Ayah of the day and today's hadith](docs/screenshots/home.jpg)
 
-**Download:** the latest `.deb` is on the [Releases](../../releases/latest) page. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
+**Download:** the latest `.deb` (Ubuntu) and `.apk` (Android TV) are on the [Releases](../../releases/latest) page. Android TV: see [docs/android-tv.md](docs/android-tv.md). What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
 ## A quick look
 
@@ -113,6 +113,13 @@ Input goes straight into the app (no fake keyboard), so it works on both Xorg an
 
 ---
 
+## Install on an Android TV (1.9)
+
+YousufOS also runs on TVs with Android TV / Google TV built in and on Android TV boxes, as the TV's home screen.
+From a Windows PC on the same Wi-Fi: turn on the TV's developer options, put `YousufOS_<version>_android.apk`
+next to `scripts\install-android-tv.ps1` and run the script. The full guide, what works and how to undo it:
+[docs/android-tv.md](docs/android-tv.md).
+
 ## Develop
 
 ```bash
@@ -120,7 +127,13 @@ npm install
 npm run dev        # UI only, in a normal browser at http://localhost:1420
 npm run tv         # full desktop app with hot reload (needs Rust + system deps)
 npm run bundle     # build the .deb / AppImage into src-tauri/target/release/bundle/
+npx tauri android build --apk --target aarch64 armv7   # the Android TV .apk (needs the Android SDK + NDK)
 ```
+
+The Android app is the same interface in an Android shell: `src-tauri/gen/android/app/src/main/java/com/nyxel/yousufos/`
+has the home-screen activity, the bridge the interface calls (`window.YousufAndroid`: installed apps, the video player,
+remote keys, prayer-time alarms, updates), the ExoPlayer video player and the small video window. In the interface,
+`isAndroid()` in `src/lib/platform.js` switches the few things that differ.
 
 `npm run dev` works on Windows or anywhere. Everything native has a browser fallback: apps open in a new tab, and settings save to localStorage.
 Two exceptions: in a plain browser, the Al Jazeera and Al Ittihad feeds are blocked by CORS (the desktop app fetches them through Rust), and local Adhan files don't play.
