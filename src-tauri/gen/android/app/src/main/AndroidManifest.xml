@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <!-- Updates: hands the new YousufOS .apk to Android's installer. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Android 12+: updates install without asking (when YousufOS installed itself). -->
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
     <!-- Prayer times: come to the front for the Adhan; camera / doorbell window. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
@@ -64,6 +66,13 @@
             android:exported="false" />
 
         <receiver android:name=".AlarmReceiver" android:exported="false" />
+        <receiver android:name=".InstallReceiver" android:exported="false" />
+        <!-- Back to YousufOS after it updated itself. -->
+        <receiver android:name=".UpdatedReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <provider
           android:name="androidx.core.content.FileProvider"

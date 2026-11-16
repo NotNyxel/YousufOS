@@ -22,19 +22,58 @@ function WeatherIcon({ code, day, className }) {
   return <CloudRain {...props} />;
 }
 
+// The forecast is kept for 16 days (the most Open-Meteo gives), so the
+// weather still shows when the internet is down. Back online: it refreshes.
+const CACHE = "yousufos.weather";
+const near = (a, b) => Math.abs(a - b) < 0.05;
+
+function readCache(lat, lng) {
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE) || "null");
+    return c && near(c.lat, lat) && near(c.lng, lng) ? c : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Weather for now from the saved forecast (null when it has run out). */
+function fromCache(c, now = new Date()) {
+  if (!c?.hourly?.time) return null;
+  // Hourly times are local to the place ("2026-11-16T18:00"); compare as local.
+  const key = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const hourKey = `${key(now)}T${String(now.getHours()).padStart(2, "0")}:00`;
+  const i = c.hourly.time.indexOf(hourKey);
+  const di = c.daily.time.indexOf(key(now));
+  if (i < 0 || di < 0) return null;
+  return {
+    temp: Math.round(c.hourly.temperature_2m[i]),
+    code: c.hourly.weather_code[i],
+    day: !!c.hourly.is_day[i],
+    hi: Math.round(c.daily.temperature_2m_max[di]),
+    lo: Math.round(c.daily.temperature_2m_min[di]),
+    saved: true,
+  };
+}
+
 function Weather({ lat, lng }) {
   const { t } = useI18n();
-  const [w, setW] = useState(null);
+  const [w, setW] = useState(() => (lat == null ? null : fromCache(readCache(lat, lng))));
   useEffect(() => {
     if (lat == null || lng == null) return;
     let alive = true;
     const load = () =>
       fetchText(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`,
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=16`,
       )
         .then((txt) => {
           const d = JSON.parse(txt);
-          if (alive && d.current)
+          if (!d.current) throw new Error("no weather");
+          try {
+            localStorage.setItem(CACHE, JSON.stringify({ lat, lng, at: Date.now(), hourly: d.hourly, daily: d.daily }));
+          } catch {
+            /* not kept: fine */
+          }
+          if (alive)
             setW({
               temp: Math.round(d.current.temperature_2m),
               code: d.current.weather_code,
@@ -43,19 +82,24 @@ function Weather({ lat, lng }) {
               lo: Math.round(d.daily.temperature_2m_min[0]),
             });
         })
-        .catch(() => {});
+        // Offline: the saved forecast for this hour.
+        .catch(() => alive && setW(fromCache(readCache(lat, lng))));
     load();
     const id = setInterval(load, 30 * 60000);
+    window.addEventListener("online", load);
     return () => {
       alive = false;
       clearInterval(id);
+      window.removeEventListener("online", load);
     };
   }, [lat, lng]);
   if (!w) return null;
   return (
     <div className="fade-up flex items-center justify-center gap-[0.7rem] text-[1.15rem] text-ink-dim">
       <WeatherIcon code={w.code} day={w.day} className="h-[1.5rem] w-[1.5rem] text-accent" />
-      <span className="tabular font-semibold text-ink">{w.temp}°</span>
+      <span className="tabular font-semibold text-ink" title={w.saved ? t("Saved forecast (offline)") : undefined}>
+        {w.temp}°
+      </span>
       <span>{t(LABELS[w.code] || "Cloudy")}</span>
       <span className="tabular text-ink-faint" dir="ltr">
         ↑{w.hi}° ↓{w.lo}°

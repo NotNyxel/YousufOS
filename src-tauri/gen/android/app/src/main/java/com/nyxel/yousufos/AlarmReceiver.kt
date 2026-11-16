@@ -31,3 +31,11 @@ class AlarmReceiver : BroadcastReceiver() {
     }
   }
 }
+
+/** YousufOS just updated itself: open it again. */
+class UpdatedReceiver : BroadcastReceiver() {
+  override fun onReceive(ctx: Context, intent: Intent) {
+    if (intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
+    Bridge.toFront(ctx)
+  }
+}

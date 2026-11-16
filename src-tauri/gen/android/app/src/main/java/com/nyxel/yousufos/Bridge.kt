@@ -299,7 +299,12 @@ class JsApi(private val act: MainActivity) {
   }
 
   // ------------------------------------------------------------- updates
-  /** Opens Android's installer for a downloaded YousufOS .apk. */
+  /**
+   * Installs a downloaded YousufOS .apk with Android's package installer.
+   * On Android 12+ (once YousufOS is its own installer, which the install
+   * script sets up) it updates without asking; otherwise Android shows its
+   * "Update this app?" screen.
+   */
   @JavascriptInterface
   fun installApk(path: String): String {
     if (Build.VERSION.SDK_INT >= 26 && !pm.canRequestPackageInstalls()) {
@@ -307,16 +312,48 @@ class JsApi(private val act: MainActivity) {
       return "permission"
     }
     return try {
-      val dir = File(act.cacheDir, "updates").apply { mkdirs() }
-      val dest = File(dir, "YousufOS.apk")
-      File(path).copyTo(dest, overwrite = true)
-      val uri = FileProvider.getUriForFile(act, "${act.packageName}.fileprovider", dest)
-      val i = Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-      act.startActivity(i)
+      val installer = pm.packageInstaller
+      val params = android.content.pm.PackageInstaller.SessionParams(android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+      params.setAppPackageName(act.packageName)
+      if (Build.VERSION.SDK_INT >= 31) params.setRequireUserAction(android.content.pm.PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+      val id = installer.createSession(params)
+      installer.openSession(id).use { session ->
+        File(path).inputStream().use { input ->
+          session.openWrite("YousufOS.apk", 0, File(path).length()).use { out ->
+            input.copyTo(out)
+            session.fsync(out)
+          }
+        }
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
+        val pi = PendingIntent.getBroadcast(act, id, Intent(act, InstallReceiver::class.java), flags)
+        session.commit(pi.intentSender)
+      }
       ""
     } catch (e: Exception) {
       e.message ?: "install failed"
+    }
+  }
+}
+
+/** Android's answer to an update: asks for confirmation when needed, reports failures. */
+class InstallReceiver : android.content.BroadcastReceiver() {
+  override fun onReceive(ctx: Context, intent: Intent) {
+    val status = intent.getIntExtra(android.content.pm.PackageInstaller.EXTRA_STATUS, -999)
+    when (status) {
+      android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+        @Suppress("DEPRECATION")
+        val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT) ?: return
+        confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+          ctx.startActivity(confirm)
+        } catch (_: Exception) {
+        }
+      }
+      android.content.pm.PackageInstaller.STATUS_SUCCESS -> {}
+      else -> {
+        val msg = intent.getStringExtra(android.content.pm.PackageInstaller.EXTRA_STATUS_MESSAGE) ?: "status $status"
+        Bridge.emit("update-failed", JSONObject().put("error", msg).toString())
+      }
     }
   }
 }

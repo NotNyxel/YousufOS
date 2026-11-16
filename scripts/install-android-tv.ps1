@@ -108,6 +108,14 @@ if (-not ($result -match "Success")) {
   exit 1
 }
 
+# Android 12+: make YousufOS its own installer, so its updates install without asking.
+$sdk = 0
+[int]::TryParse("$(Adb -s $target shell getprop ro.build.version.sdk)".Trim(), [ref]$sdk) | Out-Null
+if ($sdk -ge 31) {
+  Say "Setting up automatic updates (one more minute)..."
+  Adb -s $target install -r -i $pkg $Apk | Out-Null
+}
+
 # 4. Permissions: show over other apps (Adhan, doorbell), install its own updates, exact prayer alarms.
 foreach ($op in @("SYSTEM_ALERT_WINDOW", "REQUEST_INSTALL_PACKAGES", "SCHEDULE_EXACT_ALARM")) {
   Adb -s $target shell appops set $pkg $op allow 2>$null | Out-Null

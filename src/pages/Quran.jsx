@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useState } from "react";
-import { BookOpen, Bookmark, Headphones, Play } from "lucide-react";
+import { BookOpen, Bookmark, Headphones, Play, WifiOff } from "lucide-react";
+import { invoke, isTauri } from "../lib/platform";
 import { loadQuran, refOf, arabicDigits } from "../quran/data";
 import { reciter as findReciter } from "../quran/reciters";
 import { play as playRecitation } from "../quran/audio";
@@ -19,6 +20,8 @@ function Quran({ settings, update, open, onOpened }) {
   const [q, setQ] = useState(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState("surahs");
+  // Verses of the chosen reciter on this TV (to suggest downloading for offline).
+  const [haveAudio, setHaveAudio] = useState(null);
   const [own, setReader] = useState(null); // { index, play }
   const qs = settings.quran;
 
@@ -32,6 +35,12 @@ function Quran({ settings, update, open, onOpened }) {
 
   const last = q && qs.last != null ? refOf(q, qs.last) : null;
   const rec = findReciter(qs.reciter);
+  useEffect(() => {
+    if (!isTauri()) return;
+    invoke("quran_status")
+      .then((st) => setHaveAudio(st?.audio?.[rec.id]?.count || 0))
+      .catch(() => {});
+  }, [rec.id, tab]);
   const ar = lang === "ar";
 
   if (error) return <div className="p-[9rem] text-[1.3rem] text-ink-dim">{t("Couldn't load the Qur'an: {error}", { error })}</div>;
@@ -72,6 +81,16 @@ function Quran({ settings, update, open, onOpened }) {
       </div>
 
       <div className="mt-[1.6rem] flex gap-[0.8rem]">
+        {haveAudio !== null && haveAudio < 6236 && tab !== "downloads" && (
+          <button
+            data-nav
+            onClick={() => setTab("downloads")}
+            className="focus-row ms-auto order-last flex items-center gap-[0.6rem] rounded-full px-[1.2rem] py-[0.6rem] text-[1rem] text-ink-dim"
+          >
+            <WifiOff className="h-[1.2rem] w-[1.2rem] text-accent" />
+            {t("Download {name} to listen without internet", { name: ar ? rec.ar : rec.en })}
+          </button>
+        )}
         {TABS.map((x) => (
           <button
             key={x.id}

@@ -11,8 +11,9 @@ export function newer(a, b) {
   for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0);
   return false;
 }
-// Where YousufOS releases are published (used when no repository is set).
-export const DEFAULT_REPO = "NotNyxel/YousufOS";
+// Where YousufOS releases are published (used when no repository is set): a
+// public repository with only the release files, so TVs need no token.
+export const DEFAULT_REPO = "NotNyxel/YousufOS-releases";
 // "owner/name" from whatever was typed: a github.com link, .git, spaces.
 export function repoName(v) {
   const m = String(v || "")

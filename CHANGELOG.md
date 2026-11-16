@@ -23,8 +23,18 @@ YousufOS on Android TV.
 - Visual effects start on *Performance* on Android TVs (smoother on TV chips).
 - First install from a Windows PC with `scripts/install-android-tv.ps1`; see [docs/android-tv.md](docs/android-tv.md). It checks YousufOS works before making it the home screen, and `-Undo` brings the TV's own home screen back.
 
+### Automatic updates
+- Android TVs install new versions by themselves (Android 12 and newer, after the install script; older TVs show Android's *Update* screen once). Never during a video or the Adhan. Settings → System → Updates → *Install updates automatically*.
+- Updates now come from the public **NotNyxel/YousufOS-releases** repository, so TVs need no GitHub token.
+
+### Works offline
+- **Weather:** the 16-day forecast is kept on the TV, so the weather still shows when the internet is down, and refreshes as soon as it's back.
+- **News:** the last headlines are kept and shown when offline.
+- Prayer times, the Adhan, Hijri dates and the Ramadan / Eid countdowns never needed the internet (they're calculated on the TV).
+- The Qur'an page suggests downloading the chosen reciter so recitations work without internet.
+
 ### Releases
-- Each release now has the Ubuntu `.deb` and the Android TV `.apk`, both in `SHA256SUMS`.
+- Each release now has the Ubuntu `.deb` and the Android TV `.apk`, both in `SHA256SUMS`, and is also published on NotNyxel/YousufOS-releases.
 
 ## 1.8.1 · 11 November 2026
 

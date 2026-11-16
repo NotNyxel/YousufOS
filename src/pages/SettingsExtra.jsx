@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 import { Download, KeyRound, RefreshCw, Save, Send, Sunrise, Trash2, Upload, Pencil } from "lucide-react";
 import { ActionRow, OptionRow, SectionTitle, ToggleRow } from "../components/controls";
 import TextEntry from "../components/TextEntry";
-import { invoke, isTauri } from "../lib/platform";
+import { invoke, isAndroid, isTauri } from "../lib/platform";
 import { useI18n } from "../lib/settings-store";
 import { newTopic, notifyPhones } from "../lib/notify";
 import { makeBackup, backupName, readBackup } from "../lib/backup";
@@ -179,7 +179,7 @@ export function UpdatesRows({ settings, update, setStatus }) {
     if (!state?.release) return;
     setState({ ...state, busy: true });
     try {
-      await installUpdate(u, state.release, (step) => setStatus(step === "download" ? t("Downloading the update…") : t("Installing: enter your password when asked")));
+      await installUpdate(u, state.release, (step) => setStatus(step === "download" ? t("Downloading the update…") : isAndroid() ? t("Installing the update…") : t("Installing: enter your password when asked")));
     } catch (e) {
       setStatus(String(e));
       setState({ ...state, busy: false });
@@ -199,8 +199,11 @@ export function UpdatesRows({ settings, update, setStatus }) {
       <SectionTitle>Updates</SectionTitle>
       <ActionRow label={state?.available ? "Install the update" : "Check for updates"} hint={status} Icon={state?.available ? Download : RefreshCw} onAction={state?.available ? install : () => check()} />
       <ToggleRow label="Check every day" value={u.auto !== false} onChange={(v) => update("updates.auto", v)} />
+      {isAndroid() && (
+        <ToggleRow label="Install updates automatically" hint={t("New versions install by themselves (never during a video or the Adhan)")} value={u.autoInstall !== false} onChange={(v) => update("updates.autoInstall", v)} />
+      )}
       <ActionRow label="GitHub repository" hint={repoName(u.repo) || DEFAULT_REPO} Icon={Pencil} onAction={() => setEditing("repo")} />
-      <ActionRow label="GitHub token" hint={u.token ? t("Saved ({tail})", { tail: "…" + cleanToken(u.token).slice(-4) }) : t("Needed for a private repository: a fine-grained token with read access to its contents")} Icon={KeyRound} onAction={() => setEditing("token")} />
+      <ActionRow label="GitHub token" hint={u.token ? t("Saved ({tail})", { tail: "…" + cleanToken(u.token).slice(-4) }) : t("Not needed for NotNyxel/YousufOS-releases. For a private repository: a fine-grained token with read access to its contents")} Icon={KeyRound} onAction={() => setEditing("token")} />
       {editing && (
         <TextEntry
           layout="text"

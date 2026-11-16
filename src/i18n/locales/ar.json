@@ -965,5 +965,12 @@
   "Storage, permissions and notifications for YousufOS": "التخزين والأذونات والإشعارات الخاصة بـ YousufOS",
   "Remote: OK select · Back back · Channel ▲ ▼ switch pages · Menu or Info: sidebar · Home: back to YousufOS": "جهاز التحكم: OK للاختيار · رجوع للعودة · القناة ▲ ▼ للتنقل بين الصفحات · القائمة أو المعلومات: الشريط الجانبي · الرئيسية: العودة إلى YousufOS",
   "Coloured buttons: red Live TV · green Qur'an · yellow Prayer · blue Apps": "الأزرار الملونة: الأحمر البث المباشر · الأخضر القرآن · الأصفر الصلاة · الأزرق التطبيقات",
-  "In the video player: ◀ ▶ −10 s / +10 s · OK pause · ▲ ▼ or Channel ▲ ▼ change channel (Live TV) · Back close": "في مشغل الفيديو: ◀ ▶ ‎−10 ث / ‎+10 ث · OK إيقاف مؤقت · ▲ ▼ أو القناة ▲ ▼ لتغيير القناة (البث المباشر) · رجوع للإغلاق"
+  "In the video player: ◀ ▶ −10 s / +10 s · OK pause · ▲ ▼ or Channel ▲ ▼ change channel (Live TV) · Back close": "في مشغل الفيديو: ◀ ▶ ‎−10 ث / ‎+10 ث · OK إيقاف مؤقت · ▲ ▼ أو القناة ▲ ▼ لتغيير القناة (البث المباشر) · رجوع للإغلاق",
+  "Download {name} to listen without internet": "حمّل {name} للاستماع بدون إنترنت",
+  "Saved forecast (offline)": "توقعات محفوظة (بدون إنترنت)",
+  "Updating YousufOS to {version}…": "جارٍ تحديث YousufOS إلى {version}…",
+  "The update didn't install: {error}": "لم يُثبَّت التحديث: {error}",
+  "Install updates automatically": "تثبيت التحديثات تلقائيًا",
+  "New versions install by themselves (never during a video or the Adhan)": "تُثبَّت الإصدارات الجديدة تلقائيًا (ليس أثناء مشاهدة فيديو أو الأذان)",
+  "Not needed for NotNyxel/YousufOS-releases. For a private repository: a fine-grained token with read access to its contents": "غير مطلوب لـ NotNyxel/YousufOS-releases. للمستودع الخاص: رمز دقيق الصلاحيات للقراءة فقط"
 }

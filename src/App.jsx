@@ -31,7 +31,7 @@ import CastPhoto from "./components/CastPhoto";
 import MorningScreen from "./components/MorningScreen";
 import { useAdminBridge, useAdminServer, useRecordingScheduler } from "./lib/admin-bridge";
 import { notifyPhones } from "./lib/notify";
-import { checkUpdate } from "./lib/updates";
+import { checkUpdate, installUpdate } from "./lib/updates";
 import { useSettings } from "./lib/settings-store";
 import { applyFonts } from "./lib/fonts";
 import { startAmbient, stopAmbient, setAmbientVolume } from "./lib/ambient";
@@ -643,6 +643,7 @@ export default function App() {
       listen("remote-button", (b) => isAndroid() && android().key(String(b))),
       listen("bring-to-front", () => isAndroid() && android().toFront()),
       listen("android-alarm", () => setScreensaver(null)),
+      listen("update-failed", (e) => setToast(t("The update didn't install: {error}", { error: e?.error || "" }))),
       listen("volume", (level) => setVolume({ level, at: Date.now() })),
       listen("gamepad-connected", (name) => setToast(t("Controller connected: {name}", { name }))),
       listen("app-moved-to-chrome", () => setToast(t("This video is protected, so it opened in Chrome"))),
@@ -847,10 +848,23 @@ export default function App() {
   // ---- Daily update check -------------------------------------------------
   useEffect(() => {
     const u = settings.updates;
-    if (!isTauri() || !loaded || !u?.auto || Date.now() - (u.lastCheck || 0) < 20 * 3600000) return;
+    // Android TV installs updates by itself, so it looks more often.
+    const every = isAndroid() ? 6 : 20;
+    if (!isTauri() || !loaded || !u?.auto || Date.now() - (u.lastCheck || 0) < every * 3600000) return;
     update("updates.lastCheck", Date.now());
     checkUpdate(u).then((r) => {
-      if (r.available && r.latest !== u.skip) setToast(t("YousufOS {version} is available: Settings → System → Updates", { version: r.latest }));
+      if (!r.available || r.latest === u.skip) return;
+      if (isAndroid() && u.autoInstall !== false) {
+        // Not in the middle of a video or the Adhan; the next check tries again.
+        if (android().playerOpen() || adhan) {
+          update("updates.lastCheck", 0);
+          return;
+        }
+        setToast(t("Updating YousufOS to {version}…", { version: r.latest }));
+        installUpdate(u, r.release).catch((e) => setToast(t("The update didn't install: {error}", { error: String(e?.message || e) })));
+        return;
+      }
+      setToast(t("YousufOS {version} is available: Settings → System → Updates", { version: r.latest }));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minute, loaded]);
