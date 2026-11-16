@@ -1,6 +1,6 @@
 # Installs YousufOS on an Android TV from a Windows PC and makes it the TV's
 # home screen. See docs/android-tv.md. Run it next to YousufOS_<version>_android.apk:
-#   powershell -ExecutionPolicy Bypass -File install-android-tv.ps1 [-Ip 192.168.0.105]
+#   powershell -ExecutionPolicy Bypass -File install-android-tv.ps1 [-Ip 192.168.1.50]
 param(
   [string]$Ip = "",
   [string]$Apk = "",
@@ -33,7 +33,7 @@ if (-not (Test-Path $adb)) {
 function Adb { & $adb @args 2>&1 | ForEach-Object { "$_" } }
 
 # 2. Connect to the TV.
-if (-not $Ip) { $Ip = Read-Host "The TV's IP address (Settings > Network & Internet > your Wi-Fi), e.g. 192.168.0.105" }
+if (-not $Ip) { $Ip = Read-Host "The TV's IP address (Settings > Network & Internet > your Wi-Fi), e.g. 192.168.1.50" }
 $Ip = $Ip.Trim()
 $target = if ($Ip -match ":\d+$") { $Ip } else { "$($Ip):5555" }
 Say "Connecting to $target ..."
@@ -54,11 +54,11 @@ if (-not $ok) {
   Say "The TV didn't answer on the usual port." "Yellow"
   Say "On the TV: Settings > System > Developer options > Wireless debugging > turn it ON," "Yellow"
   Say "then choose 'Pair device with pairing code'. The TV shows an IP address & port and a 6-digit code." "Yellow"
-  $pairAt = Read-Host "Type the IP address & port shown under the pairing code (e.g. 192.168.0.105:41235), or press Enter to stop"
+  $pairAt = Read-Host "Type the IP address & port shown under the pairing code (e.g. 192.168.1.50:41235), or press Enter to stop"
   if ($pairAt) {
     $code = Read-Host "Type the 6-digit pairing code"
     Adb pair $pairAt $code | Out-Host
-    $target = Read-Host "Now type the IP address & port shown at the top of the Wireless debugging screen (e.g. 192.168.0.105:37099)"
+    $target = Read-Host "Now type the IP address & port shown at the top of the Wireless debugging screen (e.g. 192.168.1.50:37099)"
     Adb connect $target | Out-Host
     $ok = WaitFor $target 15
   }

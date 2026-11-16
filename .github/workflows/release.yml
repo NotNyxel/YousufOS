@@ -8,10 +8,7 @@
 #   YOUSUFOS_KEYSTORE_B64       the keystore file, base64
 #   YOUSUFOS_KEYSTORE_PASSWORD  its password
 # (Without them the release has no .apk.)
-# TVs update from a public repository with only the release files, so they
-# need no token: NotNyxel/YousufOS-releases. Publishing there needs a third
-# secret, RELEASES_TOKEN: a fine-grained token with Contents: Read and write
-# on that repository.
+# The repository is public, so TVs download updates without a token.
 # Release notes come from that version's section in CHANGELOG.md.
 name: Release
 
@@ -188,19 +185,3 @@ jobs:
           gh release create "$TAG" dist-release/* --target "$GITHUB_SHA" \
             --title "YousufOS $v" --notes-file notes.md
 
-      - name: Publish to the public updates repository
-        env:
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
-          TAG: ${{ needs.check.outputs.tag }}
-        run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::warning::No RELEASES_TOKEN: TVs won't see this version until it's on NotNyxel/YousufOS-releases."
-            exit 0
-          fi
-          v="${TAG#v}"
-          if gh release view "$TAG" -R NotNyxel/YousufOS-releases > /dev/null 2>&1; then
-            echo "Already on NotNyxel/YousufOS-releases"
-            exit 0
-          fi
-          gh release create "$TAG" dist-release/* -R NotNyxel/YousufOS-releases \
-            --title "YousufOS $v" --notes-file notes.md

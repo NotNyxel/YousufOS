@@ -972,5 +972,5 @@
   "The update didn't install: {error}": "لم يُثبَّت التحديث: {error}",
   "Install updates automatically": "تثبيت التحديثات تلقائيًا",
   "New versions install by themselves (never during a video or the Adhan)": "تُثبَّت الإصدارات الجديدة تلقائيًا (ليس أثناء مشاهدة فيديو أو الأذان)",
-  "Not needed for NotNyxel/YousufOS-releases. For a private repository: a fine-grained token with read access to its contents": "غير مطلوب لـ NotNyxel/YousufOS-releases. للمستودع الخاص: رمز دقيق الصلاحيات للقراءة فقط"
+  "Not needed for a public repository. For a private one: a fine-grained token with read access to its contents": "غير مطلوب للمستودع العام. للمستودع الخاص: رمز دقيق الصلاحيات للقراءة فقط"
 }

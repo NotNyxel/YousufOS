@@ -338,3 +338,7 @@ scripts/setup-ubuntu.sh one-time TV-box setup
 ## Roadmap
 Smart Home (Home Assistant lights / thermostat / doors), Cameras (Frigate, UniFi, Ring), server monitoring (CPU, RAM, network, Docker).
 The sidebar already has commented-out slots for them in `src/components/Sidebar.jsx`.
+
+## License
+
+All rights reserved, see [LICENSE](LICENSE). The repository is public only so YousufOS installations can download their updates.

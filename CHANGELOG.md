@@ -25,7 +25,7 @@ YousufOS on Android TV.
 
 ### Automatic updates
 - Android TVs install new versions by themselves (Android 12 and newer, after the install script; older TVs show Android's *Update* screen once). Never during a video or the Adhan. Settings → System → Updates → *Install updates automatically*.
-- Updates now come from the public **NotNyxel/YousufOS-releases** repository, so TVs need no GitHub token.
+- The YousufOS repository is now public (all rights reserved, see `LICENSE`), so TVs update without a GitHub token.
 
 ### Works offline
 - **Weather:** the 16-day forecast is kept on the TV, so the weather still shows when the internet is down, and refreshes as soon as it's back.
@@ -34,7 +34,7 @@ YousufOS on Android TV.
 - The Qur'an page suggests downloading the chosen reciter so recitations work without internet.
 
 ### Releases
-- Each release now has the Ubuntu `.deb` and the Android TV `.apk`, both in `SHA256SUMS`, and is also published on NotNyxel/YousufOS-releases.
+- Each release now has the Ubuntu `.deb` and the Android TV `.apk`, both in `SHA256SUMS`.
 
 ## 1.8.1 · 11 November 2026
 

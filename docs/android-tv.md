@@ -55,7 +55,7 @@ You need the TV and the PC on the same Wi-Fi, and the file
 4. Turn on **USB debugging** and, if it's listed, **Network debugging** /
    **Wireless debugging**.
 5. Note the TV's IP address: **Settings → Network & Internet → (your Wi-Fi)**,
-   for example `192.168.0.105`.
+   for example `192.168.1.50`.
 
 YousufOS also needs a recent **Android System WebView** (version 111 or
 newer). The installer checks it; if it's too old, update *Android System
@@ -82,7 +82,7 @@ location like on the laptop.
 ### Doing it by hand
 
 ```
-adb connect 192.168.0.105
+adb connect 192.168.1.50
 adb install -r YousufOS_1.9.0_android.apk
 adb shell appops set com.nyxel.yousufos SYSTEM_ALERT_WINDOW allow
 adb shell appops set com.nyxel.yousufos REQUEST_INSTALL_PACKAGES allow
