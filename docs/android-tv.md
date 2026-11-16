@@ -63,9 +63,9 @@ WebView* from Google Play on the TV.
 
 ### 2. Run the installer on the PC
 
-Put `YousufOS_<version>_android.apk` and `scripts\install-android-tv.ps1` in
-the same folder, then right-click the script → **Run with PowerShell**
-(or run `powershell -ExecutionPolicy Bypass -File install-android-tv.ps1`).
+Put `YousufOS_<version>_android.apk`, `scripts\install-android-tv.ps1` and
+`scripts\Install YousufOS.bat` in the same folder, then double-click
+**Install YousufOS.bat**.
 It asks for the TV's IP address, then:
 
 1. downloads Google's `adb` tool (once),

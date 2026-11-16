@@ -6,7 +6,8 @@ param(
   [string]$Apk = "",
   [switch]$Undo
 )
-$ErrorActionPreference = "Stop"
+# adb writes normal messages to stderr; don't treat them as failures.
+$ErrorActionPreference = "Continue"
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $pkg = "com.nyxel.yousufos"
 
@@ -18,27 +19,52 @@ $adb = Join-Path $tools "adb.exe"
 if (-not (Test-Path $adb)) {
   Say "Downloading Google's adb tool..."
   $zip = Join-Path $env:TEMP "platform-tools.zip"
-  Invoke-WebRequest "https://dl.google.com/android/repository/platform-tools-latest-windows.zip" -OutFile $zip
+  $ProgressPreference = "SilentlyContinue"
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  try {
+    Invoke-WebRequest "https://dl.google.com/android/repository/platform-tools-latest-windows.zip" -OutFile $zip -UseBasicParsing
+  } catch {
+    Say "Couldn't download adb. Check the laptop is connected to the internet, then try again." "Red"
+    exit 1
+  }
   Expand-Archive $zip -DestinationPath $here -Force
   Remove-Item $zip
 }
-function Adb { & $adb @args }
+function Adb { & $adb @args 2>&1 | ForEach-Object { "$_" } }
 
 # 2. Connect to the TV.
 if (-not $Ip) { $Ip = Read-Host "The TV's IP address (Settings > Network & Internet > your Wi-Fi), e.g. 192.168.0.105" }
+$Ip = $Ip.Trim()
 $target = if ($Ip -match ":\d+$") { $Ip } else { "$($Ip):5555" }
 Say "Connecting to $target ..."
 Adb connect $target | Out-Host
 Say "If the TV asks 'Allow USB debugging?', choose 'Always allow from this computer' and OK." "Yellow"
-$ok = $false
-for ($i = 0; $i -lt 30; $i++) {
-  $state = (Adb -s $target get-state 2>$null)
-  if ($state -eq "device") { $ok = $true; break }
-  Start-Sleep -Seconds 2
-  if ($i % 5 -eq 4) { Adb connect $target | Out-Null }
+function WaitFor($t, $tries) {
+  for ($i = 0; $i -lt $tries; $i++) {
+    if ((Adb -s $t get-state) -eq "device") { return $true }
+    Start-Sleep -Seconds 2
+    if ($i % 5 -eq 4) { Adb connect $t | Out-Null }
+  }
+  return $false
+}
+$ok = WaitFor $target 30
+if (-not $ok) {
+  # Newer TVs: Developer options > Wireless debugging, with a pairing code.
+  Say ""
+  Say "The TV didn't answer on the usual port." "Yellow"
+  Say "On the TV: Settings > System > Developer options > Wireless debugging > turn it ON," "Yellow"
+  Say "then choose 'Pair device with pairing code'. The TV shows an IP address & port and a 6-digit code." "Yellow"
+  $pairAt = Read-Host "Type the IP address & port shown under the pairing code (e.g. 192.168.0.105:41235), or press Enter to stop"
+  if ($pairAt) {
+    $code = Read-Host "Type the 6-digit pairing code"
+    Adb pair $pairAt $code | Out-Host
+    $target = Read-Host "Now type the IP address & port shown at the top of the Wireless debugging screen (e.g. 192.168.0.105:37099)"
+    Adb connect $target | Out-Host
+    $ok = WaitFor $target 15
+  }
 }
 if (-not $ok) {
-  Say "Couldn't connect. Check that Developer options > USB debugging (and Network debugging) is on, and that the TV and PC are on the same Wi-Fi." "Red"
+  Say "Couldn't connect to the TV. Check that Developer options > USB debugging is ON, that the TV and laptop are on the same Wi-Fi, and that you chose 'Allow' on the TV. Then run this again." "Red"
   exit 1
 }
 Say "Connected: $(Adb -s $target shell getprop ro.product.model)" "Green"
@@ -56,10 +82,12 @@ if ($wv) {
 }
 
 # The TV's own home screen.
-$homeActivity = (Adb -s $target shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME | Select-Object -Last 1).Trim()
+$homeActivity = "$(Adb -s $target shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME | Select-Object -Last 1)".Trim()
 $stock = @("com.google.android.apps.tv.launcherx", "com.google.android.tvlauncher", "com.google.android.leanbacklauncher")
 
 if ($Undo) {
+  $saved = Join-Path $here "disabled-launcher.txt"
+  if (Test-Path $saved) { $stock += (Get-Content $saved | Where-Object { $_ }) }
   foreach ($p in $stock) { Adb -s $target shell pm enable $p 2>$null | Out-Null }
   Adb -s $target uninstall $pkg | Out-Host
   Say "Done: the TV's own home screen is back." "Green"
@@ -73,7 +101,12 @@ if (-not $Apk -or -not (Test-Path $Apk)) {
   exit 1
 }
 Say "Installing $(Split-Path -Leaf $Apk) (this takes a minute)..."
-Adb -s $target install -r $Apk | Out-Host
+$result = Adb -s $target install -r $Apk
+$result | Out-Host
+if (-not ($result -match "Success")) {
+  Say "Installing didn't work (see the message above). Send a photo of this window to Yousuf." "Red"
+  exit 1
+}
 
 # 4. Permissions: show over other apps (Adhan, doorbell), install its own updates, exact prayer alarms.
 foreach ($op in @("SYSTEM_ALERT_WINDOW", "REQUEST_INSTALL_PACKAGES", "SCHEDULE_EXACT_ALARM")) {
@@ -89,10 +122,12 @@ if ($answer -notmatch "^[yY]") {
 }
 
 # 5. YousufOS as the home screen: switch the TV's own launcher off (undo: -Undo).
-if ($homeActivity -and -not $homeActivity.StartsWith($pkg)) {
-  $current = $homeActivity.Split("/")[0]
+$current = if ($homeActivity -match "^[\w.]+/") { $homeActivity.Split("/")[0] } else { "" }
+if ($current -and $current -ne $pkg -and $current -ne "android" -and $current -notlike "com.android.settings*") {
   Say "The TV's home screen was $current; switching it off so Home opens YousufOS."
   Adb -s $target shell pm disable-user --user 0 $current | Out-Host
+  # Remembered so "Undo YousufOS" can switch it back on.
+  Add-Content -Path (Join-Path $here "disabled-launcher.txt") -Value $current
 }
 foreach ($p in $stock) { Adb -s $target shell pm disable-user --user 0 $p 2>$null | Out-Null }
 Adb -s $target shell cmd package set-home-activity "$pkg/.MainActivity" 2>$null | Out-Null
@@ -100,4 +135,4 @@ Adb -s $target shell am start -n "$pkg/.MainActivity" | Out-Null
 
 Say ""
 Say "YousufOS is installed and is now the TV's home screen." "Green"
-Say "To go back to the TV's own home screen later: run this script with -Undo"
+Say "To go back to the TV's own home screen later: double-click 'Undo YousufOS.bat' in this folder."
