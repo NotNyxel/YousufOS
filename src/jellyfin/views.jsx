@@ -6,7 +6,7 @@ import {
   Check, ChevronLeft, ChevronRight, Delete, Download, HardDriveDownload, Heart, Play, RotateCcw, Search as SearchIcon, Shuffle, Star, Subtitles, Tv,
 } from "lucide-react";
 import { focusDefault } from "../lib/nav";
-import { isTauri, listen } from "../lib/platform";
+import { isAndroid, isTauri, listen } from "../lib/platform";
 import { TICKS, clock, episodeCode, progressOf, runtime } from "./api";
 import { ActionButton, Art, Card, Pill, Row, Spinner } from "./ui";
 import { cardShape, useData } from "./data";
@@ -330,7 +330,7 @@ function VideoDetails({ client, item, play, t, onKey, settings, open, onToast, o
     return (
       <div className="flex h-full flex-col justify-end px-[4.5rem] pb-[5rem]">
         <h1 dir="auto" className="text-[3rem] font-extrabold">{item.Name}</h1>
-        <p dir="auto" className="mt-[0.8rem] text-[1.2rem] text-white/65">{t("Books open in Jellyfin's web app. Press Y on the Jellyfin tile to open it.")}</p>
+        <p dir="auto" className="mt-[0.8rem] text-[1.2rem] text-white/65">{isAndroid() ? t("Books open in Jellyfin's web app on a computer or phone.") : t("Books open in Jellyfin's web app. Press Y on the Jellyfin tile to open it.")}</p>
       </div>
     );
   return (

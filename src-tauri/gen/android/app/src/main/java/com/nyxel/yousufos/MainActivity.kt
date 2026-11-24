@@ -26,6 +26,12 @@ class MainActivity : TauriActivity() {
     super.onCreate(savedInstanceState)
     Bridge.main = this
     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    // A remote or controller connected / disconnected: the interface updates its button hints.
+    (getSystemService(INPUT_SERVICE) as android.hardware.input.InputManager).registerInputDeviceListener(object : android.hardware.input.InputManager.InputDeviceListener {
+      override fun onInputDeviceAdded(id: Int) = Bridge.emit("remote-changed", "{}")
+      override fun onInputDeviceRemoved(id: Int) = Bridge.emit("remote-changed", "{}")
+      override fun onInputDeviceChanged(id: Int) {}
+    }, null)
     fullScreen()
     handleIntent(intent, starting = true)
   }
@@ -92,7 +98,30 @@ class MainActivity : TauriActivity() {
 
   // Remote buttons the web view doesn't pass to the page become the keys the
   // interface already understands (the same ones a game controller sends).
+  // OK: a short press is sent when it's released; held for over half a
+  // second it's "LongEnter" (favourite a channel, quick menu, Y on a controller).
+  private var okDown = false
+  private var okLong = false
+
   override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+    if (Keys.isOk(event.keyCode)) {
+      when (event.action) {
+        KeyEvent.ACTION_DOWN -> {
+          if (event.repeatCount == 0) {
+            okDown = true
+            okLong = false
+          } else if (okDown && !okLong && event.eventTime - event.downTime >= 550) {
+            okLong = true
+            Bridge.emit("gamepad-key", org.json.JSONObject.quote("LongEnter"))
+          }
+        }
+        KeyEvent.ACTION_UP -> {
+          if (okDown && !okLong) Bridge.emit("gamepad-key", org.json.JSONObject.quote("Enter"))
+          okDown = false
+        }
+      }
+      return true
+    }
     val key = Keys.forLauncher(event.keyCode)
     if (key != null) {
       if (event.action == KeyEvent.ACTION_DOWN) Bridge.emit("gamepad-key", org.json.JSONObject.quote(key))
@@ -103,11 +132,11 @@ class MainActivity : TauriActivity() {
 }
 
 object Keys {
+  fun isOk(code: Int) = code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_BUTTON_A || code == KeyEvent.KEYCODE_NUMPAD_ENTER
+
   /** Remote button -> key name for the interface (null: let the web view have it). */
   fun forLauncher(code: Int): String? = when (code) {
     KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_BUTTON_B -> "GoBack"
-    // OK: sent as Enter so every web view version behaves the same.
-    KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_NUMPAD_ENTER -> "Enter"
     KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_PLAY, KeyEvent.KEYCODE_MEDIA_PAUSE, KeyEvent.KEYCODE_BUTTON_X -> "x"
     KeyEvent.KEYCODE_BUTTON_Y -> "y"
     KeyEvent.KEYCODE_CHANNEL_UP, KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_MEDIA_PREVIOUS -> "PageUp"

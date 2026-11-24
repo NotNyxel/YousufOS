@@ -7,6 +7,7 @@ import { ActionRow, OptionRow, SectionTitle, ToggleRow } from "../components/con
 import TextEntry from "../components/TextEntry";
 import { invoke, isAndroid, isTauri } from "../lib/platform";
 import { useI18n } from "../lib/settings-store";
+import { keyLabel } from "../lib/remote";
 import { newTopic, notifyPhones } from "../lib/notify";
 import { makeBackup, backupName, readBackup } from "../lib/backup";
 import { checkUpdate, installUpdate, CURRENT, DEFAULT_REPO, repoName, cleanToken } from "../lib/updates";
@@ -154,7 +155,7 @@ export function PipRows({ settings, update }) {
     <>
       <SectionTitle>Small window (picture-in-picture)</SectionTitle>
       <Note>
-        {t("Press X on a channel to keep it playing in a small window while you use the rest of YousufOS or another app. X on any channel again closes it.")}
+        {t("{key} on a channel keeps it playing in a small window while you use the rest of YousufOS or another app. {key} on any channel again closes it.", { key: keyLabel("x", t) })}
       </Note>
       <OptionRow label="Corner" value={p.corner || "br"} onChange={(v) => update("pip.corner", v)} options={[{ value: "br", label: "Bottom right" }, { value: "bl", label: "Bottom left" }, { value: "tr", label: "Top right" }, { value: "tl", label: "Top left" }]} />
       <OptionRow label="Size" value={p.size || 480} onChange={(v) => update("pip.size", v)} options={[{ value: 400, label: "Small" }, { value: 480, label: "Medium" }, { value: 640, label: "Large" }]} />

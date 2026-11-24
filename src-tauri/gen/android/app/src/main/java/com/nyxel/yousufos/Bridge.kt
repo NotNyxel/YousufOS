@@ -69,6 +69,42 @@ class JsApi(private val act: MainActivity) {
 
   private fun canDrawOverlays() = Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(act)
 
+  // ------------------------------------------------------------- remote
+  /**
+   * Which buttons the TV's remotes (and any controller) have, so the interface
+   * only mentions buttons that exist: {name, color, channel, menu, info, media, numbers, gamepad}.
+   */
+  @JavascriptInterface
+  fun remote(): String {
+    var color = false; var channel = false; var menu = false; var info = false
+    var media = false; var numbers = false; var gamepad = false
+    val names = ArrayList<String>()
+    for (id in android.view.InputDevice.getDeviceIds()) {
+      val d = android.view.InputDevice.getDevice(id) ?: continue
+      if (d.isVirtual) continue
+      val src = d.sources
+      val pad = (src and android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD ||
+        (src and android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK
+      val keys = (src and android.view.InputDevice.SOURCE_KEYBOARD) == android.view.InputDevice.SOURCE_KEYBOARD ||
+        (src and android.view.InputDevice.SOURCE_DPAD) == android.view.InputDevice.SOURCE_DPAD
+      if (!keys && !pad) continue
+      if (pad) gamepad = true
+      val has = d.hasKeys(KeyEvent.KEYCODE_PROG_RED, KeyEvent.KEYCODE_CHANNEL_UP, KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_INFO,
+        KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_5, KeyEvent.KEYCODE_DPAD_CENTER)
+      // Only devices that look like a remote (they have OK / centre).
+      if (!has[6] && !pad) continue
+      if (has[0]) color = true
+      if (has[1]) channel = true
+      if (has[2]) menu = true
+      if (has[3]) info = true
+      if (has[4]) media = true
+      if (has[5]) numbers = true
+      names.add(d.name)
+    }
+    return JSONObject().put("name", names.joinToString(", ")).put("color", color).put("channel", channel).put("menu", menu)
+      .put("info", info).put("media", media).put("numbers", numbers).put("gamepad", gamepad).toString()
+  }
+
   // ------------------------------------------------------------- apps
   private fun launchables(): List<ResolveInfo> {
     val seen = HashSet<String>()

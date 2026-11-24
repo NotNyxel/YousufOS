@@ -6,6 +6,25 @@ Every YousufOS release. Install a release on the TV laptop with
 
 The source code in this repository starts with 1.7.0. Earlier versions are available as installers on their releases.
 
+## 1.9.1 · 24 November 2026
+
+For the laptop and Android TV.
+
+### Remote and navigation
+- Pressing ▼ at the bottom of a page (Apps, Settings…) no longer jumps into the sidebar and opens another page: it just stops.
+- **Android TV:** no more controller (Xbox) button hints. Where the laptop says "Y", the TV says **Hold OK**, and "X" is **Play/Pause**. Holding OK on the remote now works everywhere Y does (favourite a channel, mark a film watched in Jellyfin…).
+- **Android TV:** YousufOS detects the remote's buttons (coloured buttons, Channel ▲ ▼, Menu / Info, Play / Pause) and the remote guide in Settings → System only lists the ones it has. It updates when a remote or controller is connected.
+- OK on the TV remote now selects when it's released, so holding it doesn't repeat.
+
+### Live TV
+- **Hold OK** (Y on a controller) on a channel adds it to Favourites, or opens a **quick menu**: play, favourite, small window, or record for 30 min / 1 h / 2 h / 3 h (recording on the laptop). Choose in Settings → Live TV → *Holding OK on a channel*.
+- **Search channels** from the new Search button: any part of the name works, even with a typo, a missing space or another Arabic spelling ("aljazera", "mbc4", "الجزيره"). It looks through the list you're on, your favourites, the official channels and the big free lists.
+- The main Search page finds channels the same forgiving way.
+
+### Wallpapers
+- Settings → Backgrounds → **Wallpapers from**: your country (from Settings → Location, detected or chosen), the UAE collection (built in, works offline), around the world (a new mix every day), one country you choose, several countries you choose, or your own images.
+- More photos in the world collection, starting with the UAE, Saudi Arabia and the rest of the Gulf and Arab world.
+
 ## 1.9.0 · 15 November 2026
 
 YousufOS on Android TV.

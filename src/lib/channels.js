@@ -21,9 +21,77 @@ export async function allChannels(settings) {
   return [...base, ...more].filter((c) => c.url && !seen.has(c.url) && seen.add(c.url));
 }
 
-const norm = (s) => String(s || "").toLowerCase().normalize("NFKD").replace(/[̀-ًͯ-ٟ]/g, "");
+// Forgiving search: ignores case, accents, Arabic spelling variants (أ/إ/آ → ا,
+// ة → ه, ى → ي, harakat), spaces and small typos, so "aljazera", "al jazeera"
+// and "jazeera" all find Al Jazeera, and "mbc 4" finds MBC4.
+export function normalize(s) {
+  return String(s || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f\u064b-\u065f\u0670\u0640]/g, "")
+    .replace(/[أإآٱ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function edits(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      best = Math.min(best, cur[j]);
+    }
+    if (best > max) return max + 1;
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+const subsequence = (q, s) => {
+  let i = 0;
+  for (const ch of s) if (ch === q[i]) i++;
+  return i === q.length;
+};
+
+/** How well a channel matches the search (0: not at all). */
+export function score(c, q) {
+  const name = normalize(c.name);
+  const all = name + " " + normalize(c.group);
+  const compact = name.replace(/ /g, "");
+  const qn = normalize(q);
+  const qc = qn.replace(/ /g, "");
+  if (!qc) return 1;
+  if (name === qn || compact === qc) return 100;
+  if (compact.startsWith(qc)) return 90;
+  if (compact.includes(qc)) return 80;
+  const words = all.split(" ");
+  let total = 0;
+  for (const tok of qn.split(" ")) {
+    if (words.some((w) => w.startsWith(tok))) total += 10;
+    else if (all.replace(/ /g, "").includes(tok)) total += 8;
+    else {
+      const max = tok.length >= 6 ? 2 : tok.length >= 3 ? 1 : 0;
+      // A typo in a word ("jazera"), or the word written without "al" ("aljazera").
+      if (max && words.some((w) => edits(tok, w, max) <= max || (w.length > 3 && edits(tok, w.replace(/^al/, ""), max) <= max))) total += 6;
+      else if (max && edits(qc, compact.slice(0, qc.length + 1), max) <= max) total += 5;
+      else if (tok.length >= 2 && subsequence(tok, compact)) total += 2;
+      else return 0;
+    }
+  }
+  return total;
+}
+
 export function matchChannels(list, q, limit = 60) {
-  const n = norm(q).trim();
-  if (!n) return list.slice(0, limit);
-  return list.filter((c) => norm(c.name).includes(n) || norm(c.group).includes(n)).slice(0, limit);
+  if (!normalize(q)) return list.slice(0, limit);
+  return list
+    .map((c, i) => ({ c, i, s: score(c, q) }))
+    .filter((x) => x.s > 0)
+    .sort((a, b) => b.s - a.s || a.i - b.i)
+    .slice(0, limit)
+    .map((x) => x.c);
 }

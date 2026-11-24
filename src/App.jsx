@@ -39,7 +39,7 @@ import { formatCountdown, formatTime } from "./lib/prayer";
 import { useNow } from "./lib/useNow";
 import { ADHAN_PRAYERS, prayerSchedule } from "./lib/prayer";
 import { pickWallpapers } from "./lib/wallpapers";
-import { loadWorldCatalog, worldPhotos } from "./lib/worldWallpapers";
+import { loadWorldCatalog, mixedPhotos, worldPhotos } from "./lib/worldWallpapers";
 import { focusDefault, focusEl, pressKey, restoreMain, useGamepad, useSpatialNav } from "./lib/nav";
 import { android, closeApp, fileSrc, invoke, isAndroid, isTauri, launchApp, listImages, listen, playExternal, playerCommand, system } from "./lib/platform";
 import { androidAppList, openAndroidApp, useAndroidApps } from "./lib/android-apps";
@@ -146,24 +146,37 @@ export default function App() {
   const ramadan = useMemo(() => ramadanInfo(new Date(minute * 60000), schedule, settings), [minute, schedule, settings]);
   const hour = Math.floor(minute / 60);
   const eid = useMemo(() => eidToday(new Date(hour * 3600000), settings.prayer.hijriOffset), [hour, settings.prayer.hijriOffset]);
-  // "Wallpapers from my location": photos of the country / city in Settings.
-  const localWalls = !!settings.backgrounds.local && settings.backgrounds.collection !== "custom";
+  // Where the wallpapers come from (Settings → Wallpapers):
+  //   builtin: the built-in UAE photos (collection) · local: photos of your country
+  //   world: from around the world · country: one chosen country
+  //   countries: a chosen group · custom: your own folder
+  const bg = settings.backgrounds;
+  const wallSource = bg.source || (bg.collection === "custom" ? "custom" : bg.local ? "local" : "builtin");
+  const usesWorld = ["local", "world", "country", "countries"].includes(wallSource);
   const [world, setWorld] = useState(null);
   useEffect(() => {
-    if (localWalls && !world) loadWorldCatalog().then(setWorld);
-  }, [localWalls, world]);
+    if (usesWorld && !world) loadWorldCatalog().then(setWorld);
+  }, [usesWorld, world]);
   const day = Math.floor(minute / 1440);
   const builtIn = useMemo(
-    () => pickWallpapers(settings.backgrounds.collection, custom, schedule.isNight),
-    [settings.backgrounds.collection, custom, schedule.isNight],
+    () => pickWallpapers(wallSource === "custom" ? "custom" : bg.collection === "custom" ? "all" : bg.collection, custom, schedule.isNight),
+    [wallSource, bg.collection, custom, schedule.isNight],
   );
   const wallpapers = useMemo(() => {
-    if (!localWalls || !world) return builtIn;
-    const here = worldPhotos(world, settings.location.country, settings.location.city, schedule.isNight, day);
-    // In the UAE the built-in 4K photos join the mix.
-    const pool = settings.location.country === "AE" ? [...here, ...builtIn] : here;
+    if (!usesWorld || !world) return builtIn;
+    let here;
+    let country = null;
+    if (wallSource === "local") {
+      country = settings.location.country;
+      here = worldPhotos(world, country, settings.location.city, schedule.isNight, day);
+    } else if (wallSource === "country") {
+      country = bg.country || settings.location.country;
+      here = worldPhotos(world, country, "", schedule.isNight, day);
+    } else here = mixedPhotos(world, wallSource === "countries" ? bg.countries || [] : null, schedule.isNight, day);
+    // UAE: the built-in 4K photos join the mix.
+    const pool = country === "AE" ? [...here, ...builtIn] : here;
     return pool.length ? pool : builtIn;
-  }, [localWalls, world, builtIn, settings.location.country, settings.location.city, schedule.isNight, day]);
+  }, [usesWorld, world, builtIn, wallSource, bg.country, bg.countries, settings.location.country, settings.location.city, schedule.isNight, day]);
 
   const imageDir = settings.backgrounds.customDir || DEFAULT_IMAGE_DIR;
   const rescanImages = useCallback(async () => {

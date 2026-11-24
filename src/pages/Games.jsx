@@ -8,6 +8,7 @@ import Memory from "../games/Memory";
 import TicTacToe from "../games/TicTacToe";
 import { focusDefault } from "../lib/nav";
 import { useI18n } from "../lib/settings-store";
+import { useRemote } from "../lib/remote";
 
 const GAMES = [
   { id: "snake", name: "Snake", desc: "Eat the dates, don't bite your tail", Icon: Worm, C: Snake, color: "#2f9e6e",
@@ -79,6 +80,7 @@ function GameShell({ game, best, onBest, onExit }) {
 
 function Games({ settings, update, onPlayingChange }) {
   const { t } = useI18n();
+  const remote = useRemote();
   const [open, setOpen] = useState(null);
   const best = settings.games?.best || {};
   const lastOpened = useRef(null);
@@ -95,7 +97,7 @@ function Games({ settings, update, onPlayingChange }) {
   return (
     <div className="h-full overflow-y-auto pb-[4rem] ps-[9rem] pe-[4rem] pt-[3.5rem]">
       <h1 className="text-[2.6rem] font-bold tracking-tight">{t("Games")}</h1>
-      <p className="mt-[0.3rem] text-[1.15rem] text-ink-dim">{t("Play with the remote, a keyboard or an Xbox controller.")}</p>
+      <p className="mt-[0.3rem] text-[1.15rem] text-ink-dim">{remote.android ? (remote.gamepad ? t("Play with the remote or a game controller.") : t("Play with the remote.")) : t("Play with the remote, a keyboard or an Xbox controller.")}</p>
       <div className="mt-[2.5rem] grid grid-cols-3 gap-[1.8rem]">
         {GAMES.map((g, i) => (
           <button

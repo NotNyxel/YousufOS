@@ -13,6 +13,7 @@ import { AMBIENT } from "../lib/ambient";
 import { findCountry } from "../lib/locations";
 import { METHODS } from "../lib/prayer";
 import { COLLECTIONS } from "../lib/wallpapers";
+import { loadWorldCatalog } from "../lib/worldWallpapers";
 import { hexToRgb, hslToRgb, rgbToHex, rgbToHsl } from "../lib/color";
 import { system, setAutostart, isTauri, isAndroid } from "../lib/platform";
 import { AndroidRows } from "./SettingsAndroid";
@@ -123,6 +124,20 @@ function Settings({ settings, update, section, setSection, actions, customCount 
   const showQuran = settings.showQuran ?? settings.homeLayout !== "row";
   const country = findCountry(settings.location.country);
   const [pickingCountry, setPickingCountry] = useState(false);
+  // Wallpapers: where they come from, and the country picker for them.
+  const bgs = settings.backgrounds;
+  const wallSource = bgs.source || (bgs.collection === "custom" ? "custom" : bgs.local ? "local" : "builtin");
+  const setWallSource = (v) => update({ backgrounds: { source: v, local: v === "local" } });
+  const [wallPick, setWallPick] = useState(null); // "country" | "countries"
+  const [photoCountries, setPhotoCountries] = useState(null);
+  const openWallPick = (kind) => loadWorldCatalog().then((cat) => {
+    setPhotoCountries(new Set(Object.keys(cat).filter((c) => cat[c].length)));
+    setWallPick(kind);
+  });
+  const countryLabel = (code) => {
+    const c = findCountry(code);
+    return (lang === "ar" && c.ar) || c.short || c.name || code;
+  };
   const placeName = settings.location.city || (lang === "ar" && country.ar) || country.short;
   const worldHint = t("Photos of {place} and the rest of {country} from Wikimedia Commons, changing through the day (needs internet)", {
     place: placeName,
@@ -244,7 +259,7 @@ function Settings({ settings, update, section, setSection, actions, customCount 
           <ActionRow label="Detect again" hint={`Currently ${settings.location.label}`} Icon={LocateFixed} onAction={() => actions.detectLocation().then(setStatus)} />
         )}
         <SectionTitle>Wallpapers</SectionTitle>
-        <ToggleRow label="Wallpapers from your location" hint={worldHint} value={!!settings.backgrounds.local} onChange={(v) => update("backgrounds.local", v)} />
+        <ToggleRow label="Wallpapers from your location" hint={worldHint} value={wallSource === "local"} onChange={(v) => setWallSource(v ? "local" : "builtin")} />
         <div className="px-[1.5rem] pt-[1rem] text-[1rem] text-ink-faint">
           {t("Coordinates")} {settings.location.lat.toFixed(4)}, {settings.location.lng.toFixed(4)}
         </div>
@@ -288,12 +303,45 @@ function Settings({ settings, update, section, setSection, actions, customCount 
     backgrounds: (
       <>
         <SectionTitle>Wallpapers</SectionTitle>
-        <ToggleRow isDefault label="Wallpapers from your location" hint={worldHint} value={!!settings.backgrounds.local} onChange={(v) => update("backgrounds.local", v)} />
-        <OptionRow label="Collection" hint={settings.backgrounds.local ? "Used when your location's photos can't be loaded" : undefined} value={settings.backgrounds.collection} onChange={(v) => update("backgrounds.collection", v)} options={COLLECTIONS} />
+        <OptionRow isDefault label="Wallpapers from"
+          hint={{
+            local: worldHint,
+            builtin: "The built-in 4K photos of the UAE (no internet needed)",
+            world: "Photos from around the world, a new mix every day (needs internet)",
+            country: "Photos of the country you choose (needs internet)",
+            countries: "Photos of the countries you choose, mixed (needs internet)",
+            custom: "Your own photos, from the folder below",
+          }[wallSource]}
+          value={wallSource} onChange={setWallSource}
+          options={[
+            { value: "local", label: "Your country" },
+            { value: "builtin", label: "UAE collection" },
+            { value: "world", label: "Around the world" },
+            { value: "country", label: "A country" },
+            { value: "countries", label: "Several countries" },
+            { value: "custom", label: "Your own images" },
+          ]} />
+        {wallSource === "local" && (
+          <div className="px-[1.5rem] pb-[0.4rem] text-[1rem] text-ink-faint">
+            {t("Your country comes from Settings → Location ({how}). Change it there to see another one.", { how: settings.location.mode === "auto" ? t("detected automatically") : t("chosen by you") })}
+          </div>
+        )}
+        {wallSource === "country" && (
+          <ActionRow label="Country" hint={countryLabel(bgs.country || settings.location.country)} Icon={Globe} onAction={() => openWallPick("country")} />
+        )}
+        {wallSource === "countries" && (
+          <ActionRow label="Countries"
+            hint={(bgs.countries || []).length ? (bgs.countries || []).map(countryLabel).join(" · ") : t("None chosen yet: photos from around the world")}
+            Icon={Globe} onAction={() => openWallPick("countries")} />
+        )}
+        {(wallSource === "builtin" || wallSource === "local") && (
+          <OptionRow label="Collection" hint={wallSource === "local" ? "Used when your country's photos can't be loaded" : undefined} value={bgs.collection === "custom" ? "all" : bgs.collection} onChange={(v) => update("backgrounds.collection", v)} options={COLLECTIONS.filter((c) => c.value !== "custom")} />
+        )}
         <OptionRow label="Change every" value={settings.backgrounds.interval} onChange={(v) => update("backgrounds.interval", v)}
           options={[30, 60, 120, 300, 600].map((v) => ({ value: v, label: v < 60 ? t("{n} sec", { n: v }) : t("{n} min", { n: v / 60 }) }))} />
+{(wallSource === "custom" || wallSource === "builtin") && (
         <ActionRow label="Custom images folder" hint={`${settings.backgrounds.customDir || "~/Pictures/YousufOS"} · ${t("{n} found", { n: customCount })}`} Icon={RefreshCw}
-          onAction={() => actions.rescanImages().then((n) => setStatus(t("Found {n} custom images", { n })))} />
+          onAction={() => actions.rescanImages().then((n) => setStatus(t("Found {n} custom images", { n })))} />)}
         <div className="px-[1.5rem] pt-[1rem] text-[1rem] leading-relaxed text-ink-faint">
           {t("Night photos (file names containing “night”) are shown after Maghrib, daytime photos after sunrise.")}
         </div>
@@ -334,7 +382,7 @@ function Settings({ settings, update, section, setSection, actions, customCount 
         <ActionRow label="Jellyfin server" hint={appUrl("jellyfin")} Icon={Pencil} onAction={() => setEditing("jellyfin")} />
         <ToggleRow
           label="YousufOS Jellyfin app"
-          hint="Jellyfin in the YousufOS style, made for the remote and controller. Off: Jellyfin's own web page (Y on the tile also opens it)."
+          hint={isAndroid() ? "Jellyfin in the YousufOS style, made for the remote." : "Jellyfin in the YousufOS style, made for the remote and controller. Off: Jellyfin's own web page (Y on the tile also opens it)."}
           value={settings.jellyfin?.native !== false}
           onChange={(v) => update("jellyfin", (cur = {}) => ({ ...cur, native: v }))}
         />
@@ -367,6 +415,10 @@ function Settings({ settings, update, section, setSection, actions, customCount 
         {!isAndroid() && <OptionRow isDefault label="Player" hint={{ auto: "The built-in player first; if a channel won't play, mpv takes over", builtin: "Only the built-in player", mpv: "mpv plays almost every stream (installed with YousufOS)" }[settings.iptv.player || "auto"]}
           value={settings.iptv.player || "auto"} onChange={(v) => update("iptv.player", v)}
           options={[{ value: "auto", label: "Automatic" }, { value: "builtin", label: "Built-in" }, { value: "mpv", label: "mpv" }]} />}
+        <OptionRow isDefault={isAndroid()} label={isAndroid() ? "Holding OK on a channel" : "Y on a channel"}
+          hint={(settings.iptv.holdOk || "fav") === "menu" ? (isAndroid() ? "A quick menu: play, favourite or small window" : "A quick menu: play, favourite, small window or record") : "Adds it to Favourites (or removes it)"}
+          value={settings.iptv.holdOk || "fav"} onChange={(v) => update("iptv.holdOk", v)}
+          options={[{ value: "fav", label: "Favourite" }, { value: "menu", label: "Quick menu" }]} />
         <div className="px-[1.5rem] pt-[0.6rem] text-[1rem] leading-relaxed text-ink-faint">
           {t("“Official channels” are the broadcasters' own live streams. Other lists are free streams collected by iptv-org; some are blocked outside their home country.")}
         </div>
@@ -450,6 +502,24 @@ function Settings({ settings, update, section, setSection, actions, customCount 
       <div ref={panel} data-nav-enter className="glass min-w-0 flex-1 overflow-y-auto rounded-[1.8rem] p-[1.2rem]" key={section}>
         <div className="fade-up">{content[section]}</div>
         {status && <div className="mx-[1.5rem] mt-[1rem] rounded-[0.8rem] bg-accent/15 px-[1rem] py-[0.7rem] text-[1rem] text-accent">{status}</div>}
+        {wallPick && photoCountries && (
+          <CountryPicker
+            only={photoCountries}
+            multi={wallPick === "countries"}
+            title={wallPick === "countries" ? t("Choose countries for the wallpapers") : t("Choose a country for the wallpapers")}
+            value={bgs.country || settings.location.country}
+            values={bgs.countries || []}
+            onClose={() => setWallPick(null)}
+            onPick={(c) => {
+              if (wallPick === "countries") {
+                update("backgrounds.countries", (l = []) => (l.includes(c.code) ? l.filter((x) => x !== c.code) : [...l, c.code]));
+                return;
+              }
+              update("backgrounds.country", c.code);
+              setWallPick(null);
+            }}
+          />
+        )}
         {pickingCountry && (
           <CountryPicker
             value={country.code}

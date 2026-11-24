@@ -31,12 +31,16 @@ screen and lets the TV switch itself off).
 | Button | In YousufOS | In the video player |
 | --- | --- | --- |
 | Arrows, OK | Move, select | ◀ ▶ −10 s / +10 s · OK pause |
+| Hold OK | Favourite a channel (or its quick menu), mark watched… | |
 | Back | Back | Close the video |
 | Home | Back to YousufOS | Back to YousufOS |
 | Channel ▲ ▼ | Switch pages | Change channel (Live TV) |
 | Menu / Info | Jump to the sidebar | Show the controls |
-| Play / Pause | Play or pause the recitation | Play or pause |
+| Play / Pause | Play or pause the recitation · small window on a channel | Play or pause |
 | Red · Green · Yellow · Blue | Live TV · Qur'an · Prayer · Apps | |
+
+Not every remote has every button: YousufOS checks which ones yours has and
+Settings → System → Android TV only lists those.
 
 Volume, Power, Input and the remote's Netflix / YouTube buttons are handled
 by the TV itself, as before.

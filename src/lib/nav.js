@@ -65,6 +65,9 @@ export function moveFocus(dir) {
   }
   const trap = cur.closest('[data-nav-trap="y"]');
   if (trap && (dir === "up" || dir === "down")) items = items.filter((el) => trap.contains(el));
+  // Up/Down inside a page stay in the page: at the top or bottom nothing
+  // happens (it used to slip into the sidebar and open another page).
+  if ((dir === "up" || dir === "down") && !cur.closest("[data-sidebar]")) items = items.filter((el) => !el.closest("[data-sidebar]"));
   const r = cur.getBoundingClientRect();
   const cx = r.left + r.width / 2;
   const cy = r.top + r.height / 2;
@@ -226,6 +229,15 @@ export function useSpatialNav({ onBack, enabled = true }) {
         } else {
           e.preventDefault();
           focusDefault();
+        }
+      } else if (e.key === "LongEnter") {
+        // OK held down (Android TV remote): works like Y on a controller
+        // (favourite, mark watched…); where Y does nothing, it's a normal OK.
+        e.preventDefault();
+        if (cur && cur.dataset?.nav !== undefined) {
+          const y = new KeyboardEvent("keydown", { key: "y", bubbles: true, cancelable: true });
+          cur.dispatchEvent(y);
+          if (!y.defaultPrevented) cur.click();
         }
       } else if (BACK_KEYS.has(e.key)) {
         e.preventDefault();

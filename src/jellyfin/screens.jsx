@@ -6,6 +6,7 @@ import { Download, Globe, Play, Plus, Power, RefreshCw, Server, Trash2 } from "l
 import { focusDefault } from "../lib/nav";
 import { fileSrc } from "../lib/platform";
 import { useI18n } from "../lib/settings-store";
+import { keyLabel } from "../lib/remote";
 import { runtime } from "./api";
 import { deleteDownload } from "./downloads";
 import { ActionButton, Art, Spinner } from "./ui";
@@ -112,7 +113,7 @@ export function DownloadsView({ downloads, onPlay, onChanged }) {
   return (
     <div className="no-scrollbar h-full overflow-y-auto px-[4.5rem] pb-[6rem] pt-[1rem]">
       <h1 className="text-[2.6rem] font-extrabold tracking-tight">{t("Downloads on this TV")}</h1>
-      <p className="mt-[0.3rem] text-[1.1rem] text-white/55">{t("These play even when the Jellyfin PC is off. Y on one deletes it.")}</p>
+      <p className="mt-[0.3rem] text-[1.1rem] text-white/55">{t("These play even when the Jellyfin PC is off. {key} on one deletes it.", { key: keyLabel("y", t) })}</p>
       {!downloads.length && <div className="mt-[2rem] text-[1.3rem] text-white/60">{t("Nothing downloaded yet. A film or episode's Download button saves it here.")}</div>}
       <div className="mt-[1.6rem] grid grid-cols-4 gap-x-[1.3rem] gap-y-[1.6rem]">
         {downloads.map((d, i) => (
@@ -141,7 +142,7 @@ export function DownloadsView({ downloads, onPlay, onChanged }) {
               {armed === d.path && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-[0.4rem] bg-black/75 text-[1.05rem] font-semibold">
                   <Trash2 className="h-[1.6rem] w-[1.6rem] text-[#ff8a80]" />
-                  {t("Y again to delete")}
+                  {t("{key} again to delete", { key: keyLabel("y", t) })}
                 </div>
               )}
               <Play className="absolute end-[0.7rem] top-[0.7rem] h-[1.3rem] w-[1.3rem] fill-white text-white drop-shadow" />

@@ -64,3 +64,18 @@ export function worldPhotos(cat, country, city, isNight, day) {
   else if (!isNight && pool.length - night.length >= 3) pool = pool.filter((x) => !x.night);
   return here.length >= 3 ? shuffled(pool, day) : pool;
 }
+
+/**
+ * Photos from several countries (a chosen group, or the whole world), mixed
+ * so consecutive wallpapers come from different places. A new mix every day.
+ */
+export function mixedPhotos(cat, countries, isNight, day, limit = 80) {
+  if (!cat) return [];
+  const codes = shuffled((countries?.length ? countries : Object.keys(cat)).filter((c) => cat[c]?.length), day + 7);
+  // The whole world: a couple from each country; a small group: more from each.
+  const per = Math.max(2, Math.ceil(limit / Math.max(1, codes.length)));
+  const lists = codes.map((c) => worldPhotos(cat, c, "", isNight, day).slice(0, per));
+  const out = [];
+  for (let i = 0; out.length < limit && lists.some((l) => l[i]); i++) for (const l of lists) if (l[i] && out.length < limit) out.push(l[i]);
+  return out;
+}

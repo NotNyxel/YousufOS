@@ -1,6 +1,6 @@
 import { logoClass, logoOf } from "../lib/apps";
 import { useI18n } from "../lib/settings-store";
-import { fileSrc } from "../lib/platform";
+import { fileSrc, isAndroid } from "../lib/platform";
 import { androidImage } from "../lib/android-apps";
 
 // OK opens the app; Y (controller) / long OK alternative: open it in Chrome.
@@ -18,7 +18,8 @@ export default function AppTile({ app, onLaunch, size = "md", isDefault = false,
         data-app-id={app.id}
         onClick={() => onLaunch(app)}
         onKeyDown={(e) => {
-          if (e.key === "y" || e.key === "Y") {
+          // (Android TV: there's no Chrome; holding OK just opens the app.)
+          if ((e.key === "y" || e.key === "Y") && !isAndroid()) {
             e.preventDefault();
             onLaunch(app, { chrome: true });
           }

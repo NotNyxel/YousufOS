@@ -6,14 +6,15 @@ import { focusDefault, focusEl } from "../lib/nav";
 import { useI18n } from "../lib/settings-store";
 
 // Every country and territory in one list. A letter row on top jumps through
-// the alphabet so the remote doesn't need 200 presses.
-export default function CountryPicker({ value, onPick, onClose }) {
+// the alphabet so the remote doesn't need 200 presses. With `multi`, OK ticks
+// countries on and off (`values`) and Done closes it.
+export default function CountryPicker({ value, onPick, onClose, multi = false, values = [], title, only }) {
   const { t, lang } = useI18n();
   const ar = lang === "ar";
   const list = useMemo(() => {
-    const named = COUNTRIES.map((c) => ({ ...c, label: (ar && c.ar) || c.short || c.name }));
+    const named = COUNTRIES.filter((c) => !only || only.has(c.code)).map((c) => ({ ...c, label: (ar && c.ar) || c.short || c.name }));
     return named.sort((a, b) => a.label.localeCompare(b.label, ar ? "ar" : "en"));
-  }, [ar]);
+  }, [ar, only]);
   const letters = useMemo(() => [...new Set(list.map((c) => c.label[0].toUpperCase()))], [list]);
 
   useEffect(() => {
@@ -40,7 +41,14 @@ export default function CountryPicker({ value, onPick, onClose }) {
   return createPortal(
     <div data-nav-scope className="fixed inset-0 z-[96] flex items-center justify-center bg-black/70 fade-up">
       <div className="glass-strong flex h-[88vh] w-[84rem] flex-col rounded-[2rem] p-[1.8rem] shadow-2xl">
-        <div className="text-[1.7rem] font-bold">{t("Choose your country")}</div>
+        <div className="flex items-center justify-between">
+          <div className="text-[1.7rem] font-bold">{title || t("Choose your country")}</div>
+          {multi && (
+            <button data-nav onClick={onClose} className="focus-row rounded-full bg-accent px-[1.6rem] py-[0.6rem] text-[1.15rem] font-bold text-on-accent">
+              {t("Done ({n})", { n: values.length })}
+            </button>
+          )}
+        </div>
         <div className="mt-[1rem] flex flex-wrap gap-[0.4rem]">
           {letters.map((l) => (
             <button
@@ -59,7 +67,7 @@ export default function CountryPicker({ value, onPick, onClose }) {
               const l = c.label[0].toUpperCase();
               const first = !seen.has(l);
               seen.add(l);
-              const active = c.code === value;
+              const active = multi ? values.includes(c.code) : c.code === value;
               return (
                 <button
                   key={c.code}
