@@ -1030,5 +1030,17 @@
   "Photos of the countries you choose, mixed (needs internet)": "صور الدول التي تختارها، ممزوجة (يحتاج إنترنت)",
   "Your own photos, from the folder below": "صورك الخاصة، من المجلد أدناه",
   "Used when your country's photos can't be loaded": "تُستخدم عندما يتعذر تحميل صور دولتك",
-  "Jellyfin in the YousufOS style, made for the remote.": "Jellyfin بأسلوب YousufOS، مصمم لجهاز التحكم."
+  "Jellyfin in the YousufOS style, made for the remote.": "Jellyfin بأسلوب YousufOS، مصمم لجهاز التحكم.",
+  "Exit to the Windows desktop": "الخروج إلى سطح مكتب ويندوز",
+  "Always": "دائمًا",
+  "Computer's address": "عنوان الكمبيوتر",
+  "For channels that only play in another country: Live TV (and its small window and recordings) goes through a computer there, over Tailscale. Everything else stays direct. Check the local rules before using it.": "للقنوات التي لا تعمل إلا في بلد آخر: يمر البث المباشر (ونافذته الصغيرة وتسجيلاته) عبر كمبيوتر هناك باستخدام Tailscale، وكل ما عداه يبقى مباشرًا. تحقق من الأنظمة المحلية قبل استخدامه.",
+  "Its Tailscale address and port, e.g. 100.101.102.103:8888": "عنوانه في Tailscale والمنفذ، مثل 100.101.102.103:8888",
+  "Not set up yet: add the address of the computer first (see docs/live-tv-proxy.md)": "غير مُعد بعد: أضف عنوان الكمبيوتر أولًا (راجع docs/live-tv-proxy.md)",
+  "Off now: this TV's internet is in {country}": "متوقف الآن: إنترنت هذا التلفاز في {country}",
+  "On now: Live TV goes through {url}": "يعمل الآن: يمر البث المباشر عبر {url}",
+  "Only in": "فقط في",
+  "Through another country (Tailscale)": "عبر بلد آخر (Tailscale)",
+  "Use it": "استخدامه",
+  "Use it while the TV is in": "استخدمه عندما يكون التلفاز في"
 }

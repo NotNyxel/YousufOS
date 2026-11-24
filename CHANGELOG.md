@@ -21,6 +21,15 @@ For the laptop and Android TV.
 - **Search channels** from the new Search button: any part of the name works, even with a typo, a missing space or another Arabic spelling ("aljazera", "mbc4", "الجزيره"). It looks through the list you're on, your favourites, the official channels and the big free lists.
 - The main Search page finds channels the same forgiving way.
 
+### Live TV through another country (ready, off until set up)
+- Settings → Live TV → **Through another country (Tailscale)**: Live TV (and its small window and recordings) can go through a computer in another country over Tailscale, *Automatic* (only while the TV's internet is in the countries you pick, the UAE by default) or *Always*. Everything else stays direct. Setup guide: `docs/live-tv-proxy.md`.
+
+### Keyboards
+- Every text box takes a real keyboard plugged into the TV or the PC: typing, space, Backspace and Enter (search, Jellyfin search, addresses, passwords, and Backspace / Enter in PIN boxes).
+
+### Windows
+- **YousufOS for Windows**: each release now also has `YousufOS_<version>_x64-setup.exe`, for a Windows PC plugged into the TV. It updates itself from Settings → System → Updates (no password needed). Apps open in Chrome or Edge; Live TV uses the built-in player (install mpv for more channels).
+
 ### Wallpapers
 - Settings → Backgrounds → **Wallpapers from**: your country (from Settings → Location, detected or chosen), the UAE collection (built in, works offline), around the world (a new mix every day), one country you choose, several countries you choose, or your own images.
 - More photos in the world collection, starting with the UAE, Saudi Arabia and the rest of the Gulf and Arab world.

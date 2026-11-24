@@ -42,6 +42,15 @@ export default function PinPad({ title, hint, length = 4, onSubmit, onCancel, z 
         e.preventDefault();
         e.stopImmediatePropagation();
         press(e.key);
+      } else if (e.isTrusted && e.key === "Backspace" && pin) {
+        // A keyboard's Backspace deletes the last digit (Back on the remote still cancels).
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        press("back");
+      } else if (e.isTrusted && e.key === "Enter" && pin.length === length) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        press("ok");
       } else if (["Escape", "Backspace", "BrowserBack", "GoBack"].includes(e.key)) {
         e.preventDefault();
         e.stopImmediatePropagation();

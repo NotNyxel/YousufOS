@@ -43,6 +43,7 @@ import { loadWorldCatalog, mixedPhotos, worldPhotos } from "./lib/worldWallpaper
 import { focusDefault, focusEl, pressKey, restoreMain, useGamepad, useSpatialNav } from "./lib/nav";
 import { android, closeApp, fileSrc, invoke, isAndroid, isTauri, launchApp, listImages, listen, playExternal, playerCommand, system } from "./lib/platform";
 import { androidAppList, openAndroidApp, useAndroidApps } from "./lib/android-apps";
+import { useLiveProxy } from "./lib/live-proxy";
 import { appOpensInside } from "./lib/apps";
 import VolumeHud from "./components/VolumeHud";
 import { detectLocation } from "./lib/location";
@@ -57,6 +58,8 @@ const COLOR_PAGES = { ColorRed: "livetv", ColorGreen: "quran", ColorYellow: "pra
 
 export default function App() {
   const { settings, update, replace, accent, apps: catalogApps, loaded, i18n } = useSettings();
+  // Live TV through another country when set up (docs/live-tv-proxy.md).
+  const liveProxy = useLiveProxy(settings.iptv, settings.location.country);
   // Android TV: the TV's own apps (known ones keep YousufOS's logos).
   const androidInstalled = useAndroidApps();
   const { apps: allApps, more: moreApps } = useMemo(
@@ -929,7 +932,7 @@ export default function App() {
     news: <News settings={settings} onOpen={onLaunch} />,
     cameras: <Cameras settings={settings} go={go} />,
     settings: (
-      <Settings settings={settings} update={update} section={section} setSection={setSection} actions={actions} customCount={custom.length} />
+      <Settings settings={settings} update={update} section={section} setSection={setSection} actions={actions} customCount={custom.length} liveProxy={liveProxy} />
     ),
   };
 

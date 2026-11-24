@@ -109,6 +109,9 @@ pub fn record_start(app: AppHandle, url: String, name: String, minutes: u32, use
     if let Some(ua) = user_agent.filter(|u| !u.is_empty()) {
         cmd.args(["-user_agent", &ua]);
     }
+    if let Some(p) = crate::stream_proxy() {
+        cmd.args(["-http_proxy", &p]);
+    }
     cmd.args(["-i", &url, "-map", "0", "-c", "copy", "-f", "mpegts"]);
     let minutes = minutes.clamp(1, 600);
     cmd.args(["-t", &(minutes * 60).to_string()]);
@@ -414,7 +417,7 @@ fn pip() -> &'static Mutex<Option<Child>> {
 /// Live TV in a small window that stays on top of everything.
 /// corner: "br" | "bl" | "tr" | "tl"; size: width in pixels.
 #[tauri::command]
-pub fn pip_start(url: String, title: String, corner: String, size: u32, muted: bool, user_agent: Option<String>, headers: Option<Vec<String>>) -> Result<(), String> {
+pub fn pip_start(url: String, title: String, corner: String, size: u32, muted: bool, user_agent: Option<String>, headers: Option<Vec<String>>, live: Option<bool>) -> Result<(), String> {
     pip_stop();
     let w = size.clamp(320, 1280);
     let h = w * 9 / 16;
@@ -443,6 +446,12 @@ pub fn pip_start(url: String, title: String, corner: String, size: u32, muted: b
         "--network-timeout=15",
     ]);
     cmd.arg(format!("--geometry={geo}"));
+    // Live TV channels go through the Live TV proxy too (cameras never do).
+    if live == Some(true) {
+        if let Some(p) = crate::stream_proxy() {
+            cmd.arg(format!("--http-proxy={p}"));
+        }
+    }
     cmd.arg(format!("--force-media-title={title}"));
     if muted {
         cmd.arg("--mute=yes");

@@ -11,6 +11,8 @@ export const isTauri = () =>
 // which adds window.YousufAndroid (installed apps, the video player, the
 // remote's extra buttons, updates). See src-tauri/gen/android/.../Bridge.kt.
 export const isAndroid = () => typeof window !== "undefined" && !!window.YousufAndroid;
+// The Windows version (a PC plugged into the TV).
+export const isWindows = () => typeof navigator !== "undefined" && /Windows/i.test(navigator.userAgent) && !isAndroid();
 export const android = () => window.YousufAndroid;
 
 // Events from the Android side: window.__yaEmit(name, payload).
@@ -38,15 +40,23 @@ const headerObject = (list) =>
   );
 
 const NOT_ON_ANDROID = "This isn't available on the Android TV version yet.";
+
+// Live TV proxy in use right now ("" = direct); see lib/live-proxy.js.
+let streamProxy = "";
+export function setStreamProxy(url) {
+  streamProxy = url || "";
+  if (isTauri()) tauriInvoke("set_stream_proxy", { url: streamProxy || null }).catch((e) => console.warn("proxy", e));
+}
+export const currentStreamProxy = () => streamProxy;
 // Laptop commands that work differently on Android.
 const ANDROID_COMMANDS = {
   play_media: ({ entries, headers, audioOnly, sync }) =>
     // okToApp: Jellyfin decides what OK does (skip the intro or pause).
     android().play(JSON.stringify({ kind: "media", entries, headers: headerObject(headers), audioOnly: !!audioOnly, okToApp: sync !== undefined })),
-  play_external: ({ channels, index }) => android().play(JSON.stringify({ kind: "live", entries: channels, index: index || 0 })),
+  play_external: ({ channels, index }) => android().play(JSON.stringify({ kind: "live", entries: channels, index: index || 0, proxy: streamProxy })),
   player_command: ({ args }) => android().playerCommand(JSON.stringify(args || [])),
-  pip_start: ({ url, title, corner, size, muted, userAgent, headers }) => {
-    const r = android().pipStart(JSON.stringify({ url, title, corner, size, muted, userAgent: userAgent || "", headers: headerObject(headers) }));
+  pip_start: ({ url, title, corner, size, muted, userAgent, headers, live }) => {
+    const r = android().pipStart(JSON.stringify({ url, title, corner, size, muted, userAgent: userAgent || "", headers: headerObject(headers), proxy: live ? streamProxy : "" }));
     if (r === "overlay") {
       android().openSettings("overlay");
       throw new Error("Allow YousufOS to display over other apps, then try again.");

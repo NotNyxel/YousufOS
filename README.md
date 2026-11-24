@@ -8,7 +8,7 @@ Built with **React + Tailwind** (UI) and **Tauri / Rust** (native layer).
 
 ![YousufOS Home: clock, Hijri date, next prayer, Jellyfin Continue Watching, Ayah of the day and today's hadith](docs/screenshots/home.jpg)
 
-**Download:** the latest `.deb` (Ubuntu) and `.apk` (Android TV) are on the [Releases](../../releases/latest) page. Android TV: see [docs/android-tv.md](docs/android-tv.md). What changed in each version: [CHANGELOG.md](CHANGELOG.md).
+**Download:** the latest `.deb` (Ubuntu), `-setup.exe` (Windows) and `.apk` (Android TV) are on the [Releases](../../releases/latest) page. Android TV: see [docs/android-tv.md](docs/android-tv.md). What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
 ## A quick look
 

@@ -1,6 +1,6 @@
 // Pages of the Jellyfin app. Every control is a [data-nav] element, so the
 // remote / controller moves around with the arrows like the rest of YousufOS.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Check, ChevronLeft, ChevronRight, Delete, Download, HardDriveDownload, Heart, Play, RotateCcw, Search as SearchIcon, Shuffle, Star, Subtitles, Tv,
@@ -629,6 +629,11 @@ function TrackPicker({ item, t, value, onPick, onClose }) {
 const KEYS = "abcdefghijklmnopqrstuvwxyz1234567890";
 export function SearchView({ client, open, t, onKey, setBackdrop }) {
   const [text, setText] = useState("");
+  // The current text for the keyboard handler (set up once).
+  const textRef = useRef("");
+  useLayoutEffect(() => {
+    textRef.current = text;
+  });
   const [found, setFound] = useState({ q: null, items: [] });
   const q = text.trim();
   const busy = q.length >= 2 && found.q !== q;
@@ -653,10 +658,15 @@ export function SearchView({ client, open, t, onKey, setBackdrop }) {
   useEffect(() => {
     const onType = (e) => {
       if (!e.isTrusted || e.ctrlKey || e.altKey || e.metaKey) return;
-      if (e.key.length === 1 && e.key !== " ") {
+      if (e.key.length === 1 && (e.key !== " " || textRef.current)) {
         e.preventDefault();
         e.stopImmediatePropagation();
         setText((v) => v + e.key);
+      } else if (e.key === "Backspace" && textRef.current) {
+        // Deletes a letter while there's text; on an empty search it's Back.
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        setText((v) => v.slice(0, -1));
       }
     };
     window.addEventListener("keydown", onType, true);

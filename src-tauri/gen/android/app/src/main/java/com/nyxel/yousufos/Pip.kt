@@ -34,7 +34,7 @@ object Pip {
     val url = req.optString("url")
     if (url.isEmpty()) return
     val headers = Media.headers(req.optJSONObject("headers"))
-    val p = ExoPlayer.Builder(ctx).setMediaSourceFactory(Media.sourceFactory(ctx, headers, req.optString("userAgent"))).build()
+    val p = ExoPlayer.Builder(ctx).setMediaSourceFactory(Media.sourceFactory(ctx, headers, req.optString("userAgent"), req.optString("proxy"))).build()
     p.volume = if (req.optBoolean("muted", false)) 0f else 1f
     p.setMediaItem(MediaItem.fromUri(url))
     p.prepare()

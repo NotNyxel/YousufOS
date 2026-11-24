@@ -42,7 +42,8 @@ export default function TextEntry({ title, hint, value, port, onSave, onClose, l
         e.preventDefault();
         e.stopImmediatePropagation();
         edit((v) => v.slice(0, -1));
-      } else if (e.isTrusted && e.key.length === 1 && !e.ctrlKey && !e.altKey && e.key !== " ") {
+      } else if (e.isTrusted && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey && (e.key !== " " || typed)) {
+        // Any key on a real keyboard (TV or PC) types; space too, once typing has started.
         e.preventDefault();
         e.stopImmediatePropagation();
         typed = true;

@@ -1,7 +1,7 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Baby, Cctv, Palette, MapPin, MonitorPlay, House, AppWindow, Tv, Pencil, BellRing, Languages, Music, Gamepad2, Image as ImageIcon, Newspaper, Cpu, Play, LocateFixed, Globe, RefreshCw, LogOut, Power, RotateCcw, Moon, Smartphone } from "lucide-react";
 import { OptionRow, ToggleRow, SliderRow, ActionRow, SectionTitle } from "../components/controls";
-import { BackupRows, MorningRows, PhoneSection, PipRows, UpdatesRows } from "./SettingsExtra";
+import { BackupRows, LiveProxyRows, MorningRows, PhoneSection, PipRows, UpdatesRows } from "./SettingsExtra";
 import { CamerasSection, KidsSection, RamadanRows } from "./SettingsMore";
 import TextEntry from "../components/TextEntry";
 import CountryPicker from "../components/CountryPicker";
@@ -15,7 +15,7 @@ import { METHODS } from "../lib/prayer";
 import { COLLECTIONS } from "../lib/wallpapers";
 import { loadWorldCatalog } from "../lib/worldWallpapers";
 import { hexToRgb, hslToRgb, rgbToHex, rgbToHsl } from "../lib/color";
-import { system, setAutostart, isTauri, isAndroid } from "../lib/platform";
+import { system, setAutostart, isTauri, isAndroid, isWindows } from "../lib/platform";
 import { AndroidRows } from "./SettingsAndroid";
 import { THEMES } from "../lib/themes";
 import { DEFAULT_APPS } from "../lib/apps";
@@ -78,7 +78,7 @@ function ColorWheel({ hex }) {
 
 const every = (t, v) => (v < 60 ? t("Every {n} min", { n: v }) : t("Every {n} hr", { n: v / 60 }));
 
-function Settings({ settings, update, section, setSection, actions, customCount }) {
+function Settings({ settings, update, section, setSection, actions, customCount, liveProxy }) {
   const { t, lang } = useI18n();
   const { replace: replaceSettings } = useSettings();
   const [status, setStatus] = useState("");
@@ -425,6 +425,7 @@ function Settings({ settings, update, section, setSection, actions, customCount 
         <div className="px-[1.5rem] pt-[0.8rem] text-[1rem] leading-relaxed text-ink-faint">
           {t("Add your own playlists in config.json under iptv.playlists, e.g. [{ \"label\": \"My list\", \"url\": \"https://…/list.m3u\" }].")}
         </div>
+        <LiveProxyRows settings={settings} update={update} status={liveProxy || {}} />
         <PipRows settings={settings} update={update} />
       </>
     ),
@@ -459,7 +460,7 @@ function Settings({ settings, update, section, setSection, actions, customCount 
         </div>
         </>)}
         <SectionTitle>Power</SectionTitle>
-        {!isAndroid() && <ActionRow label="Exit to Ubuntu desktop" hint="Closes the launcher" Icon={LogOut} confirm onAction={() => system("exit")} />}
+        {!isAndroid() && <ActionRow label={isWindows() ? "Exit to the Windows desktop" : "Exit to Ubuntu desktop"} hint="Closes the launcher" Icon={LogOut} confirm onAction={() => system("exit")} />}
         <ActionRow label="Reload YousufOS" Icon={RotateCcw} onAction={() => location.reload()} />
         {!isAndroid() && (<>
         <ActionRow label="Sleep" Icon={Moon} confirm onAction={() => system("suspend")} />

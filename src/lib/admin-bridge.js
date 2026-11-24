@@ -141,7 +141,7 @@ export function useAdminBridge(ctx) {
         case "pip": {
           const ch = await findChannel(args.id);
           if (!ch) return { error: "Channel not found" };
-          await invoke("pip_start", { url: ch.url, title: ch.name, corner: s.pip?.corner || "br", size: s.pip?.size || 480, muted: !!s.pip?.muted, userAgent: ch.ua || null });
+          await invoke("pip_start", { url: ch.url, title: ch.name, corner: s.pip?.corner || "br", size: s.pip?.size || 480, muted: !!s.pip?.muted, userAgent: ch.ua || null, live: true });
           return { ok: true };
         }
         case "pipStop":

@@ -42,7 +42,27 @@ object Media {
     return m
   }
 
-  fun sourceFactory(ctx: Context, headers: Map<String, String>, userAgent: String?): DefaultMediaSourceFactory {
+  fun sourceFactory(ctx: Context, headers: Map<String, String>, userAgent: String?, proxy: String? = null): DefaultMediaSourceFactory {
+    // Live TV through the proxy: "http://100.x.y.z:8888" (or socks5://...).
+    val p = proxy?.trim().orEmpty()
+    if (p.isNotEmpty()) {
+      try {
+        val u = Uri.parse(if (p.contains("://")) p else "http://$p")
+        val type = if (u.scheme?.startsWith("socks") == true) java.net.Proxy.Type.SOCKS else java.net.Proxy.Type.HTTP
+        val client = okhttp3.OkHttpClient.Builder()
+          .proxy(java.net.Proxy(type, java.net.InetSocketAddress.createUnresolved(u.host ?: "", if (u.port > 0) u.port else 8888)))
+          .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+          .readTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+          .followSslRedirects(true)
+          .build()
+        val ok = androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(client)
+          .setUserAgent(if (userAgent.isNullOrEmpty()) UA else userAgent)
+          .setDefaultRequestProperties(headers)
+        return DefaultMediaSourceFactory(DefaultDataSource.Factory(ctx, ok))
+      } catch (_: Exception) {
+        // A bad address: play directly.
+      }
+    }
     val http = DefaultHttpDataSource.Factory()
       .setUserAgent(if (userAgent.isNullOrEmpty()) UA else userAgent)
       .setAllowCrossProtocolRedirects(true)
@@ -100,7 +120,7 @@ class PlayerActivity : ComponentActivity() {
     WindowInsetsControllerCompat(window, window.decorView).hide(WindowInsetsCompat.Type.systemBars())
 
     val headers = Media.headers(req.optJSONObject("headers"))
-    player = ExoPlayer.Builder(this).setMediaSourceFactory(Media.sourceFactory(this, headers, req.optString("userAgent"))).build()
+    player = ExoPlayer.Builder(this).setMediaSourceFactory(Media.sourceFactory(this, headers, req.optString("userAgent"), if (live) req.optString("proxy") else null)).build()
     view = PlayerView(this).apply {
       player = this@PlayerActivity.player
       setShutterBackgroundColor(Color.BLACK)

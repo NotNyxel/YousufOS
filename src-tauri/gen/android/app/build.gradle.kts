@@ -102,6 +102,8 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer-dash:1.5.1")
     implementation("androidx.media3:media3-exoplayer-rtsp:1.5.1")
     implementation("androidx.media3:media3-ui:1.5.1")
+    // Live TV through a proxy (another country over Tailscale).
+    implementation("androidx.media3:media3-datasource-okhttp:1.5.1")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.4")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0")

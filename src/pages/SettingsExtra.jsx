@@ -2,10 +2,13 @@
 // morning screen, picture-in-picture, updates and backups.
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { Download, KeyRound, RefreshCw, Save, Send, Sunrise, Trash2, Upload, Pencil } from "lucide-react";
+import { Download, Globe, KeyRound, RefreshCw, Save, Send, Sunrise, Trash2, Upload, Pencil } from "lucide-react";
+import CountryPicker from "../components/CountryPicker";
+import { findCountry } from "../lib/locations";
+import { proxyUrl } from "../lib/live-proxy";
 import { ActionRow, OptionRow, SectionTitle, ToggleRow } from "../components/controls";
 import TextEntry from "../components/TextEntry";
-import { invoke, isAndroid, isTauri } from "../lib/platform";
+import { invoke, isAndroid, isTauri, isWindows } from "../lib/platform";
 import { useI18n } from "../lib/settings-store";
 import { keyLabel } from "../lib/remote";
 import { newTopic, notifyPhones } from "../lib/notify";
@@ -180,7 +183,7 @@ export function UpdatesRows({ settings, update, setStatus }) {
     if (!state?.release) return;
     setState({ ...state, busy: true });
     try {
-      await installUpdate(u, state.release, (step) => setStatus(step === "download" ? t("Downloading the update…") : isAndroid() ? t("Installing the update…") : t("Installing: enter your password when asked")));
+      await installUpdate(u, state.release, (step) => setStatus(step === "download" ? t("Downloading the update…") : isAndroid() || isWindows() ? t("Installing the update…") : t("Installing: enter your password when asked")));
     } catch (e) {
       setStatus(String(e));
       setState({ ...state, busy: false });
@@ -264,6 +267,59 @@ export function BackupRows({ settings, replace, setStatus }) {
         />
       ))}
       <Note>{t("Backups can also be downloaded to a phone and restored from it: admin panel → Settings.")}</Note>
+    </>
+  );
+}
+
+// Settings → Live TV: channels through a computer in another country (Tailscale).
+export function LiveProxyRows({ settings, update, status }) {
+  const { t, lang } = useI18n();
+  const p = settings.iptv.proxy || {};
+  const [typing, setTyping] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const countries = p.countries?.length ? p.countries : ["AE"];
+  const name = (code) => {
+    const c = findCountry(code);
+    return (lang === "ar" && c.ar) || c.short || c.name || code;
+  };
+  const when = p.when || "off";
+  const state = !p.url
+    ? t("Not set up yet: add the address of the computer first (see docs/live-tv-proxy.md)")
+    : status.active
+      ? t("On now: Live TV goes through {url}", { url: proxyUrl(p.url) })
+      : when === "auto"
+        ? t("Off now: this TV's internet is in {country}", { country: status.country ? name(status.country) : "…" })
+        : t("Off");
+  return (
+    <>
+      <SectionTitle>Through another country (Tailscale)</SectionTitle>
+      <OptionRow label="Use it" hint={state} value={when} onChange={(v) => update("iptv.proxy.when", v)}
+        options={[{ value: "off", label: "Off" }, { value: "auto", label: "Automatic" }, { value: "always", label: "Always" }]} />
+      <ActionRow label="Computer's address" hint={p.url ? proxyUrl(p.url) : t("Its Tailscale address and port, e.g. 100.101.102.103:8888")} Icon={Pencil} onAction={() => setTyping(true)} />
+      {when === "auto" && <ActionRow label="Only in" hint={countries.map(name).join(" · ")} Icon={Globe} onAction={() => setPicking(true)} />}
+      <Note>{t("For channels that only play in another country: Live TV (and its small window and recordings) goes through a computer there, over Tailscale. Everything else stays direct. Check the local rules before using it.")}</Note>
+      {typing && (
+        <TextEntry
+          title={t("Computer's address")}
+          hint={t("Its Tailscale address and port, e.g. 100.101.102.103:8888")}
+          value={p.url || ""}
+          layout="text"
+          onSave={(v) => {
+            update("iptv.proxy.url", v.trim());
+            setTyping(false);
+          }}
+          onClose={() => setTyping(false)}
+        />
+      )}
+      {picking && (
+        <CountryPicker
+          multi
+          title={t("Use it while the TV is in")}
+          values={countries}
+          onClose={() => setPicking(false)}
+          onPick={(c) => update("iptv.proxy.countries", (l = ["AE"]) => (l.includes(c.code) ? l.filter((x) => x !== c.code) : [...l, c.code]))}
+        />
+      )}
     </>
   );
 }

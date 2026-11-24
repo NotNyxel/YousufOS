@@ -120,6 +120,7 @@ pub fn play_external(app: AppHandle, channels: Vec<Channel>, index: usize) -> Re
         .arg(format!("--input-ipc-server={}", socket.display()))
         .arg(format!("--playlist={}", playlist.display()))
         .arg(format!("--playlist-start={index}"))
+        .args(crate::stream_proxy().map(|p| format!("--http-proxy={p}")))
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())

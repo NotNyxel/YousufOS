@@ -1,8 +1,8 @@
 // New versions from GitHub releases (see README → Updates).
-import { invoke, isAndroid, isTauri } from "./platform";
+import { invoke, isAndroid, isTauri, isWindows } from "./platform";
 
 // The package for this TV: the Android .apk or the Ubuntu .deb.
-const pkgOf = (r) => (isAndroid() ? r?.apk : r?.deb);
+const pkgOf = (r) => (isAndroid() ? r?.apk : isWindows() ? r?.exe : r?.deb);
 
 export const CURRENT = __APP_VERSION__;
 export function newer(a, b) {

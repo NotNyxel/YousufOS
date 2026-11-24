@@ -366,6 +366,49 @@ fn close_app(app: AppHandle) {
     go_home(&app);
 }
 
+// Live TV through a proxy (a Tailscale address of a computer in another
+// country, see docs/live-tv-proxy.md). The interface sets it when the TV is in
+// one of the chosen countries; None = direct.
+pub fn stream_proxy() -> Option<String> {
+    STREAM_PROXY.lock().ok().and_then(|p| p.clone())
+}
+static STREAM_PROXY: Mutex<Option<String>> = Mutex::new(None);
+static PROXY_CLIENT: Mutex<Option<(String, reqwest::Client)>> = Mutex::new(None);
+
+#[tauri::command]
+fn set_stream_proxy(url: Option<String>) -> Result<(), String> {
+    let url = url.map(|u| u.trim().to_string()).filter(|u| !u.is_empty());
+    if let Some(u) = &url {
+        reqwest::Proxy::all(u.as_str()).map_err(|e| format!("Not a proxy address: {e}"))?;
+    }
+    *STREAM_PROXY.lock().map_err(|e| e.to_string())? = url;
+    Ok(())
+}
+
+/// The client for Live TV streams: through the proxy when one is set.
+fn stream_http() -> reqwest::Client {
+    let Some(p) = stream_proxy() else { return http().clone() };
+    let mut cached = PROXY_CLIENT.lock().unwrap();
+    if let Some((u, c)) = cached.as_ref() {
+        if *u == p {
+            return c.clone();
+        }
+    }
+    let client = reqwest::Proxy::all(p.as_str())
+        .ok()
+        .and_then(|proxy| {
+            reqwest::Client::builder()
+                .user_agent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36 YousufOS/1.9")
+                .timeout(Duration::from_secs(25))
+                .proxy(proxy)
+                .build()
+                .ok()
+        })
+        .unwrap_or_else(|| http().clone());
+    *cached = Some((p, client.clone()));
+    client
+}
+
 fn http() -> &'static reqwest::Client {
     static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
     CLIENT.get_or_init(|| {
@@ -597,7 +640,7 @@ fn iptv_relay(uri: tauri::http::Uri, range: Option<String>, responder: tauri::Ur
         }
     };
     tauri::async_runtime::spawn(async move {
-        let mut req = http().get(&target);
+        let mut req = stream_http().get(&target);
         if let Some(ua) = ua {
             req = req.header("User-Agent", ua);
         }
@@ -917,12 +960,14 @@ async fn update_check(repo: String, token: String) -> Result<serde_json::Value, 
     let pick = |pred: &dyn Fn(&str) -> bool| assets.iter().find(|a| pred(a["name"].as_str().unwrap_or(""))).cloned();
     let deb = pick(&|n| n.ends_with("_amd64.deb"));
     let apk = pick(&|n| n.to_ascii_lowercase().ends_with(".apk"));
+    let exe = pick(&|n| n.to_ascii_lowercase().ends_with("-setup.exe"));
     let sums = pick(&|n| n.eq_ignore_ascii_case("SHA256SUMS") || n.ends_with(".sha256"));
     Ok(serde_json::json!({
         "version": v["tag_name"].as_str().unwrap_or("").trim_start_matches('v'),
         "name": v["name"], "notes": v["body"], "published": v["published_at"],
         "deb": deb.as_ref().map(|a| serde_json::json!({ "url": a["url"], "name": a["name"], "size": a["size"] })),
         "apk": apk.as_ref().map(|a| serde_json::json!({ "url": a["url"], "name": a["name"], "size": a["size"] })),
+        "exe": exe.as_ref().map(|a| serde_json::json!({ "url": a["url"], "name": a["name"], "size": a["size"] })),
         "sums": sums.as_ref().map(|a| a["url"].clone()),
     }))
 }
@@ -971,6 +1016,25 @@ async fn update_download(app: AppHandle, token: String, deb_url: String, deb_nam
 async fn update_install(app: AppHandle, path: String) -> Result<(), String> {
     let p = std::path::PathBuf::from(&path);
     let allowed = admin::app_data_dir(&app);
+    // Windows: the YousufOS installer, silently, then YousufOS opens again.
+    #[cfg(target_os = "windows")]
+    {
+        let name = p.file_name().map(|n| n.to_string_lossy().to_ascii_lowercase()).unwrap_or_default();
+        if !p.starts_with(&allowed) || !name.starts_with("yousufos") || !name.ends_with("-setup.exe") {
+            return Err("Only a YousufOS installer YousufOS downloaded can be installed.".into());
+        }
+        let me = std::env::current_exe().map_err(|e| e.to_string())?;
+        log_line("Installing update…");
+        use std::os::windows::process::CommandExt;
+        // cmd's own quoting (Rust's argument quoting is for programs, not cmd).
+        Command::new("cmd")
+            .raw_arg(format!("/C start \"\" /wait \"{}\" /S && start \"\" \"{}\"", p.display(), me.display()))
+            .creation_flags(0x0800_0000) // no console window
+            .spawn()
+            .map_err(|e| e.to_string())?;
+        app.exit(0);
+        return Ok(());
+    }
     if !p.starts_with(&allowed) || !path.ends_with(".deb") {
         return Err("Only a package YousufOS downloaded or received can be installed.".into());
     }
@@ -1106,6 +1170,7 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            set_stream_proxy,
             launch_app,
             close_app,
             fetch_text,

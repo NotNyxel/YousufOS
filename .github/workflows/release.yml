@@ -1,4 +1,4 @@
-# Builds YousufOS (Ubuntu .deb and Android TV .apk) and publishes a GitHub release. Either:
+# Builds YousufOS (Ubuntu .deb, Windows installer and Android TV .apk) and publishes a GitHub release. Either:
 #   push the code to the "release" branch:  git push origin main:release
 #   or push a version tag:                  git tag v1.8.1 && git push origin v1.8.1
 # The version comes from package.json (a tag must match it). TVs with updates
@@ -155,8 +155,43 @@ jobs:
           name: apk
           path: out/*.apk
 
+  windows:
+    needs: check
+    if: needs.check.outputs.exists != '1'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: windows
+
+      - name: Build the Windows installer
+        shell: bash
+        run: |
+          npm ci
+          npx tauri build --bundles nsis
+          mkdir -p out
+          cp src-tauri/target/release/bundle/nsis/*-setup.exe out/
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: out/*.exe
+
   publish:
-    needs: [check, deb, android]
+    needs: [check, deb, android, windows]
+    # The release goes out with whatever built (the laptop .deb is a must).
+    if: ${{ !cancelled() && needs.deb.result == 'success' }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -179,6 +214,9 @@ jobs:
           awk -v v="$v" '$0 ~ "^## " v "( |$)" {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md || true
           [ -s notes.md ] || echo "YousufOS $v" > notes.md
           printf '\n---\n**Install on Ubuntu:** download `YousufOS_%s_amd64.deb`, then on the TV laptop run `sudo apt install ./YousufOS_%s_amd64.deb`, or update from the TV (Settings → System → Updates).\n' "$v" "$v" >> notes.md
+          if ls dist-release/*-setup.exe > /dev/null 2>&1; then
+            printf '\n**Install on Windows:** run `YousufOS_%s_x64-setup.exe`. After that it updates from Settings → System → Updates.\n' "$v" >> notes.md
+          fi
           if ls dist-release/*.apk > /dev/null 2>&1; then
             printf '\n**Install on Android TV:** `YousufOS_%s_android.apk`; see [docs/android-tv.md](docs/android-tv.md) for the first install. After that, update from the TV.\n' "$v" >> notes.md
           fi

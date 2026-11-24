@@ -1,6 +1,6 @@
 // One search for everything: apps, Live TV channels, Jellyfin and YouTube.
 // Type with the on-screen keyboard, a real keyboard, or the phone remote.
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Delete, Film, Play, Search as SearchIcon, Tv } from "lucide-react";
 import AppTile from "../components/AppTile";
 import { focusDefault } from "../lib/nav";
@@ -16,6 +16,11 @@ const AR = ["ابتثجحخ", "دذرزسشص", "ضطظعغفق", "كلمنهو�
 function Search({ settings, apps, onLaunch, onJellyfin }) {
   const { t, lang } = useI18n();
   const [text, setText] = useState("");
+  // The current text for the keyboard handler (set up once).
+  const textRef = useRef("");
+  useLayoutEffect(() => {
+    textRef.current = text;
+  });
   const [arabic, setArabic] = useState(lang === "ar");
   const [channels, setChannels] = useState({ q: null, list: [] });
   const [jf, setJf] = useState({ q: null, list: [] });
@@ -29,10 +34,15 @@ function Search({ settings, apps, onLaunch, onJellyfin }) {
   useEffect(() => {
     const onKey = (e) => {
       if (!e.isTrusted || e.ctrlKey || e.altKey || e.metaKey || document.querySelector("[data-nav-scope]")) return;
-      if (e.key.length === 1 && e.key !== " ") {
+      if (e.key.length === 1 && (e.key !== " " || textRef.current)) {
         e.preventDefault();
         e.stopImmediatePropagation();
         setText((v) => v + e.key);
+      } else if (e.key === "Backspace" && textRef.current) {
+        // Deletes a letter while there's text; on an empty search it's Back.
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        setText((v) => v.slice(0, -1));
       }
     };
     window.addEventListener("keydown", onKey, true);

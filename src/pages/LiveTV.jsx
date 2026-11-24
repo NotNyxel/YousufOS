@@ -229,7 +229,7 @@ function LiveTV({ settings, update, paused, onPlayingChange, kids = false }) {
           return;
         }
         const p = settings.pip || {};
-        await invoke("pip_start", { url: ch.url, title: ch.name, corner: p.corner || "br", size: p.size || 480, muted: !!p.muted, userAgent: ch.ua || null });
+        await invoke("pip_start", { url: ch.url, title: ch.name, corner: p.corner || "br", size: p.size || 480, muted: !!p.muted, userAgent: ch.ua || null, live: true });
         pipUrl.current = ch.url;
         setNotice(t("{name} in a small window. {key} on it again closes it.", { name: ch.name, key: keyLabel("x", t) }));
       } catch (e) {

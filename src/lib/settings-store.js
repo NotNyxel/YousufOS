@@ -69,7 +69,9 @@ export const DEFAULTS = {
     ],
   },
   // player: auto (built-in, then mpv if a channel won't play) | builtin | mpv
-  iptv: { source: "official", favorites: [], playlists: [], player: "auto" }, // playlists: [{ label, url }] extra .m3u lists
+  // playlists: [{ label, url }] extra .m3u lists. proxy: Live TV through a computer
+  // in another country (Tailscale), when: off | auto (in `countries`) | always.
+  iptv: { source: "official", favorites: [], playlists: [], player: "auto", proxy: { when: "off", url: "", countries: ["AE"] } },
   // Apps: open inside YousufOS (auto) or always in Chrome; chromeApps = ids that always use Chrome.
   appView: { mode: "auto", chromeApps: [] },
   appUrls: {}, // e.g. { jellyfin: "http://192.168.1.20:8096" }
